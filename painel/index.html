@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Painel · Lanchonete</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <span class="marca-icone">🍔</span>
+    <span class="marca-texto">Painel da Lanchonete</span>
+  </div>
+  <nav class="abas">
+    <button class="aba aba-ativa" data-aba="cozinha">🍳 Cozinha</button>
+    <button class="aba" data-aba="vendas">📊 Vendas</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ================= COZINHA ================= -->
+  <section id="view-cozinha" class="view view-ativa">
+    <div class="colunas-cozinha">
+      <div class="coluna" data-status="recebido">
+        <h2 class="coluna-titulo status-recebido">Recebido <span class="contador" id="contador-recebido">0</span></h2>
+        <div class="coluna-lista" id="lista-recebido"></div>
+      </div>
+      <div class="coluna" data-status="preparando">
+        <h2 class="coluna-titulo status-preparando">Preparando <span class="contador" id="contador-preparando">0</span></h2>
+        <div class="coluna-lista" id="lista-preparando"></div>
+      </div>
+      <div class="coluna" data-status="pronto">
+        <h2 class="coluna-titulo status-pronto">Pronto <span class="contador" id="contador-pronto">0</span></h2>
+        <div class="coluna-lista" id="lista-pronto"></div>
+      </div>
+    </div>
+    <p class="vazio-aviso" id="cozinha-vazia" hidden>Nenhum pedido em aberto no momento. Assim que chegar um pedido pelo WhatsApp, ele aparece aqui automaticamente. 🍔</p>
+  </section>
+
+  <!-- ================= VENDAS ================= -->
+  <section id="view-vendas" class="view">
+    <div class="filtros-periodo">
+      <button class="filtro filtro-ativo" data-periodo="hoje">Hoje</button>
+      <button class="filtro" data-periodo="semana">7 dias</button>
+      <button class="filtro" data-periodo="mes">30 dias</button>
+      <button class="filtro" data-periodo="tudo">Tudo</button>
+    </div>
+
+    <div class="cartoes-stat">
+      <div class="cartao-stat">
+        <span class="stat-rotulo">Faturamento</span>
+        <span class="stat-valor" id="stat-faturamento">R$ 0,00</span>
+      </div>
+      <div class="cartao-stat">
+        <span class="stat-rotulo">Pedidos</span>
+        <span class="stat-valor" id="stat-pedidos">0</span>
+      </div>
+      <div class="cartao-stat">
+        <span class="stat-rotulo">Ticket médio</span>
+        <span class="stat-valor" id="stat-ticket">R$ 0,00</span>
+      </div>
+    </div>
+
+    <div class="painel-secao">
+      <h3>Itens mais vendidos</h3>
+      <div id="lista-itens-vendidos" class="lista-itens-vendidos"></div>
+    </div>
+
+    <div class="painel-secao">
+      <h3>Formas de pagamento</h3>
+      <div id="lista-pagamentos" class="lista-pagamentos"></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

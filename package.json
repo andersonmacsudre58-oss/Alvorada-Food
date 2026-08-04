@@ -1,0 +1,18 @@
+{
+  "name": "lanches-bot",
+  "version": "2.1.0",
+  "description": "Bot de WhatsApp + site de pedidos para venda de lanches, com catálogo, carrinho, cálculo de pedido e taxa de entrega por bairro",
+  "main": "bot.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "express": "^4.22.2",
+    "pino": "^9.4.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alvorada Food — Peça pelo site</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#1B1B3A;
+    --night-2:#2C2359;
+    --dawn:#FF6B35;
+    --coral:#FF9376;
+    --paper:#FFF6E9;
+    --paper-2:#FCEAD0;
+    --ink:#241B33;
+    --mustard:#FFC145;
+    --green-ok:#2E7D5B;
+    --display: 'Anton', sans-serif;
+    --body: 'Work Sans', sans-serif;
+    --mono: 'Space Mono', monospace;
+    --receipt-w: 400px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:var(--body);
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    background:linear-gradient(160deg, var(--night) 0%, var(--night-2) 45%, var(--dawn) 100%);
+    padding:56px 6vw 90px;
+    overflow:hidden;
+    clip-path:polygon(0 0,100% 0,100% 92%,0 100%);
+  }
+  .hero::after{
+    content:"";
+    position:absolute;
+    right:-12vw;
+    bottom:-18vw;
+    width:46vw;
+    height:46vw;
+    max-width:520px;
+    max-height:520px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--mustard), var(--dawn) 62%, transparent 72%);
+    opacity:0.9;
+  }
+  .eyebrow{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:0.14em;
+    color:var(--mustard);
+    background:rgba(255,255,255,0.08);
+    padding:5px 12px;
+    border-radius:999px;
+    margin-bottom:18px;
+  }
+  .wordmark{
+    position:relative;
+    z-index:2;
+    font-family:var(--display);
+    color:var(--paper);
+    font-size:clamp(48px, 10vw, 108px);
+    line-height:0.92;
+    letter-spacing:0.5px;
+    margin:0 0 18px;
+    max-width:9ch;
+    transform:rotate(-1.2deg);
+  }
+  .wordmark span{ color:var(--mustard); display:block; }
+  .tagline{
+    position:relative;
+    z-index:2;
+    max-width:420px;
+    font-size:17px;
+    line-height:1.55;
+    color:rgba(255,246,233,0.88);
+    margin:0 0 30px;
+  }
+  .hero-cta{
+    position:relative;
+    z-index:2;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.03em;
+    padding:13px 22px;
+    border-radius:8px;
+    text-decoration:none;
+    border:2px solid var(--ink);
+    box-shadow:5px 5px 0 rgba(0,0,0,0.25);
+    transition:transform 0.15s ease;
+  }
+  .hero-cta:hover{ transform:translate(-2px,-2px); }
+
+  /* ---------- MENU ---------- */
+  main{ max-width:1080px; margin:0 auto; padding:0 6vw 140px; }
+  .category-block{ margin-top:64px; }
+  .category-block:first-of-type{ margin-top:-30px; }
+  .category-head{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:8px;
+  }
+  .category-head h2{
+    font-family:var(--display);
+    font-size:clamp(28px,4vw,40px);
+    margin:0;
+    color:var(--ink);
+  }
+  .category-count{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--dawn);
+  }
+  .category-rule{
+    height:2px;
+    background:repeating-linear-gradient(90deg, var(--ink) 0 10px, transparent 10px 16px);
+    margin:14px 0 34px;
+    opacity:0.35;
+  }
+
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px,1fr));
+    gap:26px 22px;
+  }
+  .card{
+    background:var(--paper-2);
+    border:2px solid var(--ink);
+    border-radius:14px;
+    padding:20px 18px 18px;
+    position:relative;
+    box-shadow:6px 6px 0 rgba(36,27,51,0.12);
+  }
+  .cards .card:nth-child(odd){ transform:rotate(-0.6deg) translateY(0px); }
+  .cards .card:nth-child(even){ transform:rotate(0.7deg) translateY(16px); }
+  .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .card h3{
+    font-family:var(--body);
+    font-weight:700;
+    font-size:18px;
+    margin:0 0 6px;
+    line-height:1.25;
+  }
+  .card p.desc{
+    font-size:14px;
+    color:#584a68;
+    margin:0 0 16px;
+    line-height:1.45;
+  }
+  .price-tag{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:15px;
+    color:var(--night);
+    white-space:nowrap;
+    background:var(--mustard);
+    padding:3px 8px;
+    border-radius:6px;
+    border:1.5px solid var(--ink);
+  }
+  .card-actions{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:6px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:var(--mono);
+    font-weight:700;
+  }
+  .stepper button{
+    width:28px; height:28px;
+    border-radius:6px;
+    border:2px solid var(--ink);
+    background:var(--paper);
+    font-size:16px;
+    cursor:pointer;
+    line-height:1;
+  }
+  .stepper button:active{ transform:translateY(1px); }
+  .add-btn{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.03em;
+    background:var(--dawn);
+    color:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:8px 14px;
+    cursor:pointer;
+    box-shadow:3px 3px 0 rgba(36,27,51,0.4);
+  }
+  .add-btn:hover{ filter:brightness(1.05); }
+
+  /* ---------- FOOTER ---------- */
+  .site-footer{
+    margin-top:90px;
+    padding-top:28px;
+    border-top:2px dashed rgba(36,27,51,0.25);
+    font-size:13px;
+    color:#6c5c7c;
+  }
+  .site-footer strong{ color:var(--ink); }
+  .bairros-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .bairros-list span{
+    font-family:var(--mono);
+    font-size:12px;
+    background:var(--paper-2);
+    border:1px solid rgba(36,27,51,0.3);
+    padding:3px 9px;
+    border-radius:999px;
+  }
+
+  /* ---------- CART TAB ---------- */
+  .cart-tab{
+    position:fixed;
+    right:26px;
+    bottom:26px;
+    z-index:40;
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:14px;
+    background:var(--ink);
+    color:var(--paper);
+    padding:14px 20px;
+    border-radius:999px;
+    box-shadow:0 8px 24px rgba(27,27,58,0.35);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:2px solid var(--ink);
+    transition:transform 0.15s ease;
+  }
+  .cart-tab:hover{ transform:translateY(-2px); }
+  .cart-tab #cartCount{
+    background:var(--dawn);
+    color:var(--ink);
+    border-radius:999px;
+    padding:2px 8px;
+    font-size:12px;
+  }
+  .cart-tab.hidden{ display:none; }
+
+  /* ---------- RECEIPT / CHECKOUT PANEL ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(27,27,58,0.45);
+    z-index:49;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease;
+  }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+
+  .receipt{
+    position:fixed;
+    top:0; right:0;
+    height:100%;
+    width:min(var(--receipt-w), 100vw);
+    background:var(--paper);
+    z-index:50;
+    transform:translateX(105%);
+    transition:transform 0.32s cubic-bezier(.5,0,.2,1);
+    overflow-y:auto;
+    box-shadow:-10px 0 40px rgba(27,27,58,0.25);
+    clip-path:polygon(
+      0 0, 100% 0, 100% 100%, 0 100%,
+      0 96%, 3% 94%, 0 92%, 3% 90%, 0 88%, 3% 86%, 0 84%,
+      3% 82%, 0 80%, 3% 78%, 0 76%, 3% 74%, 0 72%,
+      3% 70%, 0 68%, 3% 66%, 0 64%, 3% 62%, 0 60%,
+      3% 58%, 0 56%, 3% 54%, 0 52%, 3% 50%,
+      0 48%, 3% 46%, 0 44%, 3% 42%, 0 40%,
+      3% 38%, 0 36%, 3% 34%, 0 32%, 3% 30%,
+      0 28%, 3% 26%, 0 24%, 3% 22%, 0 20%,
+      3% 18%, 0 16%, 3% 14%, 0 12%, 3% 10%,
+      0 8%, 3% 6%, 0 4%, 3% 2%, 0 0
+    );
+  }
+  .receipt.open{ transform:translateX(0); }
+  .receipt-inner{ padding:34px 26px 60px 34px; }
+
+  .close-receipt{
+    position:absolute;
+    top:18px; right:18px;
+    width:34px; height:34px;
+    border-radius:50%;
+    border:2px solid var(--ink);
+    background:var(--paper);
+    font-size:18px;
+    cursor:pointer;
+  }
+  .receipt h2{
+    font-family:var(--display);
+    font-size:30px;
+    margin:0 0 4px;
+  }
+  .receipt .sub{
+    font-family:var(--mono);
+    font-size:12px;
+    color:#6c5c7c;
+    margin-bottom:22px;
+    display:block;
+  }
+  .empty-cart{
+    font-family:var(--mono);
+    font-size:14px;
+    color:#6c5c7c;
+    padding:30px 0;
+  }
+  .cart-line{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px dashed rgba(36,27,51,0.25);
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  .cart-line .name{ flex:1; font-weight:700; }
+  .cart-line .line-actions{ display:flex; align-items:center; gap:6px; }
+  .cart-line .line-actions button{
+    width:22px; height:22px;
+    border-radius:5px;
+    border:1.5px solid var(--ink);
+    background:var(--paper-2);
+    cursor:pointer;
+    font-size:13px;
+    line-height:1;
+  }
+
+  .totals{ margin-top:16px; font-family:var(--mono); font-size:13px; }
+  .totals-row{ display:flex; justify-content:space-between; padding:4px 0; }
+  .totals-row.total{ font-weight:700; font-size:16px; border-top:2px solid var(--ink); margin-top:8px; padding-top:10px; }
+  .free-shipping-note{ font-size:12px; color:var(--green-ok); margin-top:6px; }
+
+  form#checkoutForm{ margin-top:26px; display:flex; flex-direction:column; gap:16px; }
+  .field label{
+    display:block;
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.03em;
+    margin-bottom:6px;
+    color:var(--ink);
+  }
+  .field input[type=text], .field select, .field textarea{
+    width:100%;
+    padding:10px 12px;
+    border-radius:8px;
+    border:2px solid var(--ink);
+    font-family:var(--body);
+    font-size:14px;
+    background:#fff;
+  }
+  .field textarea{ resize:vertical; min-height:56px; }
+  .radio-group{ display:flex; gap:10px; flex-wrap:wrap; }
+  .radio-group label{
+    display:flex; align-items:center; gap:6px;
+    font-family:var(--body); font-size:14px;
+    border:2px solid var(--ink);
+    padding:8px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    background:#fff;
+  }
+  .radio-group input{ accent-color:var(--dawn); }
+  .hint{ font-size:12px; color:#6c5c7c; margin-top:-8px; }
+
+  .send-btn{
+    width:100%;
+    margin-top:8px;
+    background:var(--dawn);
+    color:var(--paper);
+    font-family:var(--display);
+    letter-spacing:0.5px;
+    font-size:19px;
+    padding:16px;
+    border-radius:10px;
+    border:2px solid var(--ink);
+    cursor:pointer;
+    box-shadow:5px 5px 0 rgba(36,27,51,0.35);
+  }
+  .send-btn:disabled{ opacity:0.5; cursor:not-allowed; box-shadow:none; }
+  .send-btn:not(:disabled):hover{ transform:translate(-2px,-2px); }
+
+  .error-msg{
+    font-family:var(--mono);
+    font-size:12px;
+    color:#B23A3A;
+    margin-top:-8px;
+  }
+
+  @media (max-width:520px){
+    .receipt{ width:100vw; }
+    .receipt-inner{ padding:30px 20px 60px 26px; }
+    .cart-tab{ left:16px; right:16px; justify-content:center; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="hero">
+    <span class="eyebrow">SÃO LUÍS · MA</span>
+    <h1 class="wordmark">ALVORADA<span>FOOD</span></h1>
+    <p class="tagline">Dogão completo, macarronada e bebida gelada — pedido pronto em minutos, direto pro seu bairro.</p>
+    <a href="#cardapio" class="hero-cta">↓ ver cardápio</a>
+  </header>
+
+  <main id="cardapio">
+    <div id="categorias"></div>
+
+    <footer class="site-footer">
+      <p><strong>Entregamos em:</strong></p>
+      <div class="bairros-list" id="bairrosList"></div>
+      <p style="margin-top:14px;">Outros bairros: taxa a combinar no pedido · Pedidos acima de <span id="freteGratisValor"></span> não pagam entrega.</p>
+    </footer>
+  </main>
+
+  <div class="cart-tab hidden" id="cartTab">
+    🧾 <span id="cartCount">0</span> item(ns) · <span id="cartTotalTab">R$0,00</span>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <aside class="receipt" id="receipt">
+    <div class="receipt-inner">
+      <button class="close-receipt" id="closeReceipt">×</button>
+      <h2>Seu pedido</h2>
+      <span class="sub">ALVORADA FOOD · confira antes de enviar</span>
+
+      <div id="cartItems"></div>
+
+      <div class="totals" id="totalsBox" style="display:none;">
+        <div class="totals-row"><span>Subtotal</span><span id="subtotalValor">R$0,00</span></div>
+        <div class="totals-row"><span>Entrega</span><span id="taxaValor">—</span></div>
+        <div class="totals-row total"><span>Total</span><span id="totalValor">R$0,00</span></div>
+        <div class="free-shipping-note" id="freteNote" style="display:none;">🎉 Frete grátis nesse pedido!</div>
+      </div>
+
+      <form id="checkoutForm">
+        <div class="field">
+          <label for="nomeCliente">Seu nome</label>
+          <input type="text" id="nomeCliente" name="nomeCliente" placeholder="Como podemos te chamar?" required>
+        </div>
+
+        <div class="field">
+          <label for="telefoneCliente">Seu WhatsApp</label>
+          <input type="text" id="telefoneCliente" name="telefoneCliente" placeholder="Ex: 98 98227-3236" required>
+        </div>
+
+        <div class="field">
+          <label>Entrega ou retirada?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="tipoEntrega" value="entrega" checked> Entrega</label>
+            <label><input type="radio" name="tipoEntrega" value="retirada"> Retirada no local</label>
+          </div>
+        </div>
+
+        <div id="blocoEntrega">
+          <div class="field">
+            <label for="bairro">Bairro</label>
+            <select id="bairro" name="bairro"></select>
+          </div>
+          <div class="field" id="campoComplemento" style="display:none;">
+            <label for="complemento">Bloco / Apartamento</label>
+            <input type="text" id="complemento" placeholder="Ex: Bloco 3, Apto 201">
+          </div>
+          <div class="field">
+            <label for="endereco">Endereço completo</label>
+            <textarea id="endereco" placeholder="Rua, número e um ponto de referência"></textarea>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Forma de pagamento</label>
+          <div class="radio-group">
+            <label><input type="radio" name="pagamento" value="pix" checked> Pix</label>
+            <label><input type="radio" name="pagamento" value="dinheiro"> Dinheiro</label>
+            <label><input type="radio" name="pagamento" value="cartao"> Cartão</label>
+          </div>
+        </div>
+
+        <div class="field" id="campoTroco" style="display:none;">
+          <label for="troco">Precisa de troco para quanto?</label>
+          <input type="text" id="troco" placeholder="Ex: R$50,00 (deixe em branco se não precisar)">
+        </div>
+
+        <p class="error-msg" id="errorMsg" style="display:none;"></p>
+
+        <button type="submit" class="send-btn" id="sendBtn">Enviar pedido no WhatsApp</button>
+        <p class="hint">Vamos abrir o WhatsApp com o resumo do pedido pronto — é só conferir e apertar enviar.</p>
+      </form>
+    </div>
+  </aside>
+
+<script>
+  // ================= DADOS (mesmo padrão do bot: config/catalogo.js e config/entrega.js) =================
+  const NUMERO_WHATSAPP = "5598982273236";
+
+  // Endereço da API de pedidos. Como o site é servido pelo próprio bot.js,
+  // usamos um caminho relativo — funciona tanto local quanto no Render.
+  const BACKEND_URL = "/pedido";
+
+  const catalogo = [
+    { id: 1, nome: "Dogão Completo", categoria: "Lanches", preco: 15.00,
+      descricao: "Pão, salsicha, molho da casa, milho, batata palha e temperos." },
+    { id: 2, nome: "Macarronada", categoria: "Lanches", preco: 20.00,
+      descricao: "Porção generosa, do jeito que a casa faz." },
+    { id: 3, nome: "Refrigerante Coca-Cola (lata)", categoria: "Bebidas", preco: 5.00,
+      descricao: "Geladinha, 350ml." },
+    { id: 4, nome: "Refrigerante Guaraná (200 ml)", categoria: "Bebidas", preco: 2.00,
+      descricao: "Porção individual, geladinha." },
+  ];
+
+  const entregaConfig = {
+    bairros: [
+      { id: 1, nome: "São Raimundo", taxa: 5.00 },
+      { id: 2, nome: "São Cristovão", taxa: 5.00 },
+      { id: 3, nome: "Santa Barbara", taxa: 3.00 },
+      { id: 4, nome: "Alvorada 1", taxa: 3.00 },
+      { id: 5, nome: "Alvorada 2", taxa: 0.00 },
+    ],
+    taxaPadrao: 7.00,
+    freteGratisAcimaDe: 100.00,
+    bairrosComComplemento: [4, 5],
+  };
+
+  const formatarReais = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // ================= ESTADO =================
+  const carrinho = {}; // { produtoId: quantidade }
+
+  // ================= RENDER CARDÁPIO =================
+  const categoriasEl = document.getElementById("categorias");
+  const categorias = [...new Set(catalogo.map(p => p.categoria))];
+
+  categorias.forEach(cat => {
+    const itens = catalogo.filter(p => p.categoria === cat);
+    const bloco = document.createElement("div");
+    bloco.className = "category-block";
+    bloco.innerHTML = `
+      <div class="category-head">
+        <h2>${cat}</h2>
+        <span class="category-count">${itens.length} ${itens.length === 1 ? "item" : "itens"}</span>
+      </div>
+      <div class="category-rule"></div>
+      <div class="cards">
+        ${itens.map(p => `
+          <div class="card" data-id="${p.id}">
+            <div class="card-top">
+              <h3>${p.nome}</h3>
+              <span class="price-tag">${formatarReais(p.preco)}</span>
+            </div>
+            <p class="desc">${p.descricao}</p>
+            <div class="card-actions">
+              <div class="stepper" data-id="${p.id}">
+                <button type="button" class="dec">−</button>
+                <span class="qty">0</span>
+                <button type="button" class="inc">+</button>
+              </div>
+              <button type="button" class="add-btn" data-id="${p.id}">Adicionar</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+    categoriasEl.appendChild(bloco);
+  });
+
+  // ================= RENDER LISTA DE BAIRROS (rodapé) =================
+  document.getElementById("bairrosList").innerHTML = entregaConfig.bairros
+    .map(b => `<span>${b.nome} · ${formatarReais(b.taxa) === "R$ 0,00" ? "grátis" : formatarReais(b.taxa)}</span>`)
+    .join("");
+  document.getElementById("freteGratisValor").textContent = formatarReais(entregaConfig.freteGratisAcimaDe);
+
+  // ================= RENDER SELECT DE BAIRROS (checkout) =================
+  const bairroSelect = document.getElementById("bairro");
+  bairroSelect.innerHTML = entregaConfig.bairros
+    .map(b => `<option value="${b.id}">${b.nome} — ${formatarReais(b.taxa)}</option>`)
+    .join("") + `<option value="outro">Outro bairro — ${formatarReais(entregaConfig.taxaPadrao)}</option>`;
+
+  // ================= CONTROLES DE QUANTIDADE =================
+  function atualizarQtyNaTela(id) {
+    const qty = carrinho[id] || 0;
+    document.querySelectorAll(`.stepper[data-id="${id}"] .qty`).forEach(el => el.textContent = qty);
+  }
+
+  categoriasEl.addEventListener("click", (e) => {
+    const inc = e.target.closest(".inc");
+    const dec = e.target.closest(".dec");
+    const add = e.target.closest(".add-btn");
+
+    if (inc) {
+      const id = inc.closest(".stepper").dataset.id;
+      carrinho[id] = (carrinho[id] || 0) + 1;
+      atualizarQtyNaTela(id);
+    }
+    if (dec) {
+      const id = dec.closest(".stepper").dataset.id;
+      carrinho[id] = Math.max((carrinho[id] || 0) - 1, 0);
+      atualizarQtyNaTela(id);
+    }
+    if (add) {
+      const id = add.dataset.id;
+      const atual = carrinho[id] || 0;
+      carrinho[id] = atual > 0 ? atual : 1;
+      atualizarQtyNaTela(id);
+      renderCarrinho();
+      abrirReceipt();
+    }
+  });
+
+  // ================= CARRINHO / RECEIPT =================
+  const cartTab = document.getElementById("cartTab");
+  const cartCount = document.getElementById("cartCount");
+  const cartTotalTab = document.getElementById("cartTotalTab");
+  const cartItemsEl = document.getElementById("cartItems");
+  const totalsBox = document.getElementById("totalsBox");
+  const receipt = document.getElementById("receipt");
+  const overlay = document.getElementById("overlay");
+
+  function itensNoCarrinho() {
+    return Object.entries(carrinho)
+      .filter(([, qty]) => qty > 0)
+      .map(([id, qty]) => ({ produto: catalogo.find(p => p.id === Number(id)), qty }));
+  }
+
+  function calcularSubtotal() {
+    return itensNoCarrinho().reduce((soma, i) => soma + i.produto.preco * i.qty, 0);
+  }
+
+  function taxaAtual(subtotal) {
+    const tipoEntrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
+    if (tipoEntrega === "retirada") return 0;
+    if (entregaConfig.freteGratisAcimaDe !== null && subtotal >= entregaConfig.freteGratisAcimaDe) return 0;
+
+    const bairroVal = bairroSelect.value;
+    if (bairroVal === "outro") return entregaConfig.taxaPadrao;
+    const bairro = entregaConfig.bairros.find(b => b.id === Number(bairroVal));
+    return bairro ? bairro.taxa : entregaConfig.taxaPadrao;
+  }
+
+  function renderCarrinho() {
+    const itens = itensNoCarrinho();
+    const subtotal = calcularSubtotal();
+
+    // tab flutuante
+    const totalItens = itens.reduce((s, i) => s + i.qty, 0);
+    cartCount.textContent = totalItens;
+    cartTotalTab.textContent = formatarReais(subtotal);
+    cartTab.classList.toggle("hidden", totalItens === 0);
+
+    // linhas do carrinho
+    if (itens.length === 0) {
+      cartItemsEl.innerHTML = `<p class="empty-cart">Seu carrinho está vazio. Adicione algo do cardápio 🌭</p>`;
+      totalsBox.style.display = "none";
+      document.getElementById("checkoutForm").style.display = "none";
+      return;
+    }
+
+    document.getElementById("checkoutForm").style.display = "flex";
+    totalsBox.style.display = "block";
+
+    cartItemsEl.innerHTML = itens.map(i => `
+      <div class="cart-line" data-id="${i.produto.id}">
+        <span class="name">${i.qty}x ${i.produto.nome}</span>
+        <span>${formatarReais(i.produto.preco * i.qty)}</span>
+        <div class="line-actions">
+          <button type="button" class="line-dec">−</button>
+          <button type="button" class="line-inc">+</button>
+        </div>
+      </div>
+    `).join("");
+
+    atualizarTotais();
+  }
+
+  function atualizarTotais() {
+    const subtotal = calcularSubtotal();
+    const taxa = taxaAtual(subtotal);
+    const total = subtotal + taxa;
+
+    document.getElementById("subtotalValor").textContent = formatarReais(subtotal);
+    document.getElementById("taxaValor").textContent = taxa === 0 ? "Grátis" : formatarReais(taxa);
+    document.getElementById("totalValor").textContent = formatarReais(total);
+
+    const freteNote = document.getElementById("freteNote");
+    const tipoEntrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
+    freteNote.style.display = (tipoEntrega === "entrega" && taxa === 0 && subtotal >= entregaConfig.freteGratisAcimaDe) ? "block" : "none";
+  }
+
+  cartItemsEl.addEventListener("click", (e) => {
+    const linha = e.target.closest(".cart-line");
+    if (!linha) return;
+    const id = linha.dataset.id;
+    if (e.target.classList.contains("line-inc")) carrinho[id] = (carrinho[id] || 0) + 1;
+    if (e.target.classList.contains("line-dec")) carrinho[id] = Math.max((carrinho[id] || 0) - 1, 0);
+    atualizarQtyNaTela(id);
+    renderCarrinho();
+  });
+
+  function abrirReceipt() {
+    receipt.classList.add("open");
+    overlay.classList.add("open");
+  }
+  function fecharReceipt() {
+    receipt.classList.remove("open");
+    overlay.classList.remove("open");
+  }
+  cartTab.addEventListener("click", abrirReceipt);
+  document.getElementById("closeReceipt").addEventListener("click", fecharReceipt);
+  overlay.addEventListener("click", fecharReceipt);
+
+  // ================= TIPO DE ENTREGA / BAIRRO / TROCO =================
+  const blocoEntrega = document.getElementById("blocoEntrega");
+  const campoComplemento = document.getElementById("campoComplemento");
+
+  function atualizarBlocoEntrega() {
+    const tipoEntrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
+    blocoEntrega.style.display = tipoEntrega === "entrega" ? "block" : "none";
+    atualizarTotais();
+  }
+  document.querySelectorAll('input[name="tipoEntrega"]').forEach(r => r.addEventListener("change", atualizarBlocoEntrega));
+
+  function atualizarComplemento() {
+    const bairroVal = bairroSelect.value;
+    const precisa = bairroVal !== "outro" && entregaConfig.bairrosComComplemento.includes(Number(bairroVal));
+    campoComplemento.style.display = precisa ? "block" : "none";
+    atualizarTotais();
+  }
+  bairroSelect.addEventListener("change", atualizarComplemento);
+  atualizarComplemento();
+
+  const campoTroco = document.getElementById("campoTroco");
+  document.querySelectorAll('input[name="pagamento"]').forEach(r => {
+    r.addEventListener("change", () => {
+      campoTroco.style.display = r.value === "dinheiro" && r.checked ? "block" : "none";
+    });
+  });
+
+  // ================= ENVIO PARA O WHATSAPP =================
+  const form = document.getElementById("checkoutForm");
+  const errorMsg = document.getElementById("errorMsg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.style.display = "none";
+
+    const itens = itensNoCarrinho();
+    if (itens.length === 0) {
+      mostrarErro("Seu carrinho está vazio.");
+      return;
+    }
+
+    const nome = document.getElementById("nomeCliente").value.trim();
+    if (!nome) { mostrarErro("Por favor, digite seu nome."); return; }
+
+    const telefoneCliente = document.getElementById("telefoneCliente").value.trim();
+    if (!telefoneCliente) { mostrarErro("Por favor, digite seu WhatsApp."); return; }
+
+    const tipoEntrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
+    let bairroNome = null, complemento = "", endereco = "";
+
+    if (tipoEntrega === "entrega") {
+      const bairroVal = bairroSelect.value;
+      bairroNome = bairroVal === "outro" ? "Outro bairro (a combinar)" : entregaConfig.bairros.find(b => b.id === Number(bairroVal)).nome;
+      endereco = document.getElementById("endereco").value.trim();
+      if (!endereco) { mostrarErro("Por favor, preencha o endereço completo."); return; }
+
+      if (bairroVal !== "outro" && entregaConfig.bairrosComComplemento.includes(Number(bairroVal))) {
+        complemento = document.getElementById("complemento").value.trim();
+        if (!complemento) { mostrarErro("Por favor, informe bloco e apartamento."); return; }
+      }
+    }
+
+    const pagamento = document.querySelector('input[name="pagamento"]:checked').value;
+    const troco = document.getElementById("troco").value.trim();
+
+    const subtotal = calcularSubtotal();
+    const taxa = taxaAtual(subtotal);
+    const total = subtotal + taxa;
+
+    const pedido = {
+      nome,
+      numeroCliente: telefoneCliente,
+      itens: itens.map(i => ({ nome: i.produto.nome, quantidade: i.qty, precoUnitario: i.produto.preco })),
+      tipoEntrega,
+      bairro: bairroNome,
+      complemento: complemento || null,
+      enderecoDetalhado: endereco || null,
+      formaPagamento: pagamento,
+      trocoPara: (pagamento === "dinheiro" && troco) ? troco : null,
+      subtotal,
+      taxaEntrega: taxa,
+      total,
+    };
+
+    const sendBtn = document.getElementById("sendBtn");
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Enviando...";
+
+    const enviadoAutomaticamente = await enviarParaBackend(pedido);
+
+    if (enviadoAutomaticamente) {
+      sendBtn.textContent = "Pedido enviado! ✅";
+      cartItemsEl.innerHTML = `<p class="empty-cart">Pedido enviado! Você vai receber a confirmação no seu WhatsApp. 🌭</p>`;
+      totalsBox.style.display = "none";
+      form.style.display = "none";
+      for (const id in carrinho) carrinho[id] = 0;
+      renderCarrinho();
+    } else {
+      // Backend ainda não disponível: abre o WhatsApp com o pedido pronto pra enviar manualmente.
+      const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(montarMensagemWhatsapp(pedido))}`;
+      window.open(url, "_blank");
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Enviar pedido no WhatsApp";
+    }
+  });
+
+  async function enviarParaBackend(pedido) {
+    if (!BACKEND_URL || BACKEND_URL.includes("SEU-SERVIDOR-AQUI")) return false;
+    try {
+      const resposta = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pedido),
+      });
+      if (!resposta.ok) return false;
+      const dados = await resposta.json();
+      return dados.ok === true;
+    } catch (erro) {
+      return false; // backend fora do ar ou ainda não publicado — cai no fallback
+    }
+  }
+
+  function montarMensagemWhatsapp(pedido) {
+    const nomesPagamento = { pix: "Pix", dinheiro: "Dinheiro", cartao: "Cartão" };
+
+    let msg = `Olá! Gostaria de fazer o seguinte pedido 🌭\n\n`;
+    msg += `*Cliente:* ${pedido.nome}\n\n`;
+    msg += `*Itens:*\n`;
+    pedido.itens.forEach(i => {
+      msg += `${i.quantidade}x ${i.nome} — ${formatarReais(i.precoUnitario * i.quantidade)}\n`;
+    });
+    msg += `\n*Subtotal:* ${formatarReais(pedido.subtotal)}\n`;
+    msg += `*Entrega:* ${pedido.taxaEntrega === 0 ? "Grátis" : formatarReais(pedido.taxaEntrega)}\n`;
+    msg += `*Total:* ${formatarReais(pedido.total)}\n\n`;
+    msg += `*Tipo:* ${pedido.tipoEntrega === "entrega" ? "Entrega" : "Retirada no local"}\n`;
+    if (pedido.tipoEntrega === "entrega") {
+      msg += `*Bairro:* ${pedido.bairro}\n`;
+      if (pedido.complemento) msg += `*Complemento:* ${pedido.complemento}\n`;
+      msg += `*Endereço:* ${pedido.enderecoDetalhado}\n`;
+    }
+    msg += `*Pagamento:* ${nomesPagamento[pedido.formaPagamento]}`;
+    if (pedido.formaPagamento === "dinheiro" && pedido.trocoPara) msg += ` (troco para ${pedido.trocoPara})`;
+
+    return msg;
+  }
+
+  function mostrarErro(texto) {
+    errorMsg.textContent = texto;
+    errorMsg.style.display = "block";
+  }
+
+  renderCarrinho();
+</script>
+</body>
+</html>

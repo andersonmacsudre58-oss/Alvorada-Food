@@ -1,0 +1,276 @@
+/* ==========================================================
+   TOKENS
+   ========================================================== */
+:root {
+  /* Base (aplicado no topo e abas) */
+  --bg-app: #101317;
+  --texto-claro: #edeef0;
+  --texto-claro-fraco: #8b929c;
+
+  /* Cozinha (tema escuro, estilo comanda) */
+  --cozinha-bg: #101317;
+  --cozinha-card: #1a1f26;
+  --cozinha-borda: #2a313b;
+  --status-recebido: #f5a623;
+  --status-preparando: #3b82f6;
+  --status-pronto: #22c55e;
+
+  /* Vendas (tema claro, denso em dados) */
+  --vendas-bg: #faf9f6;
+  --vendas-card: #ffffff;
+  --vendas-borda: #e7e3db;
+  --vendas-texto: #1c1917;
+  --vendas-texto-fraco: #6b6459;
+  --vendas-primario: #146b47;
+  --vendas-secundario: #c2790c;
+
+  --fonte-corpo: -apple-system, "Segoe UI", system-ui, sans-serif;
+  --fonte-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--fonte-corpo);
+  background: var(--bg-app);
+  color: var(--texto-claro);
+}
+
+/* ==========================================================
+   TOPO / NAVEGAÇÃO
+   ========================================================== */
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #14181f;
+  border-bottom: 1px solid #232933;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.marca { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+.marca-icone { font-size: 22px; }
+
+.abas { display: flex; gap: 6px; }
+.aba {
+  background: transparent;
+  border: 1px solid #2a313b;
+  color: var(--texto-claro-fraco);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.aba:hover { color: var(--texto-claro); }
+.aba-ativa {
+  background: #232933;
+  color: var(--texto-claro);
+  border-color: #3a4250;
+}
+
+/* ==========================================================
+   VIEWS
+   ========================================================== */
+.view { display: none; padding: 24px; }
+.view-ativa { display: block; }
+
+/* ==========================================================
+   COZINHA
+   ========================================================== */
+.colunas-cozinha {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .colunas-cozinha { grid-template-columns: 1fr; }
+}
+
+.coluna-titulo {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  margin: 0 0 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-recebido { color: var(--status-recebido); }
+.status-preparando { color: var(--status-preparando); }
+.status-pronto { color: var(--status-pronto); }
+
+.contador {
+  background: #232933;
+  color: var(--texto-claro-fraco);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.coluna-lista { display: flex; flex-direction: column; gap: 14px; min-height: 40px; }
+
+/* Comanda (ticket) */
+.comanda {
+  background: var(--cozinha-card);
+  border: 1px solid var(--cozinha-borda);
+  border-left: 4px solid var(--cor-status, var(--status-recebido));
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 14px;
+}
+.comanda-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed var(--cozinha-borda);
+  padding-bottom: 8px;
+}
+.comanda-numero {
+  font-family: var(--fonte-mono);
+  font-weight: 700;
+  font-size: 15px;
+}
+.comanda-tempo {
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  color: var(--texto-claro-fraco);
+}
+.comanda-cliente { font-weight: 700; margin-bottom: 6px; }
+.comanda-itens { list-style: none; margin: 0 0 10px 0; padding: 0; }
+.comanda-itens li { margin-bottom: 3px; }
+.comanda-item-obs { color: var(--texto-claro-fraco); font-size: 12px; }
+.comanda-entrega {
+  font-size: 12px;
+  color: var(--texto-claro-fraco);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.comanda-pagamento {
+  font-size: 12px;
+  background: #232933;
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+.comanda-botao {
+  width: 100%;
+  padding: 9px;
+  border: none;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  color: #101317;
+  background: var(--cor-status, var(--status-recebido));
+  transition: filter 0.15s ease;
+}
+.comanda-botao:hover { filter: brightness(1.1); }
+
+.vazio-aviso {
+  text-align: center;
+  color: var(--texto-claro-fraco);
+  margin-top: 60px;
+  font-size: 15px;
+}
+
+/* ==========================================================
+   VENDAS
+   ========================================================== */
+#view-vendas {
+  background: var(--vendas-bg);
+  color: var(--vendas-texto);
+  min-height: calc(100vh - 60px);
+  margin: -24px;
+  padding: 24px;
+}
+
+.filtros-periodo { display: flex; gap: 8px; margin-bottom: 20px; }
+.filtro {
+  background: var(--vendas-card);
+  border: 1px solid var(--vendas-borda);
+  color: var(--vendas-texto-fraco);
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.filtro-ativo {
+  background: var(--vendas-primario);
+  color: #fff;
+  border-color: var(--vendas-primario);
+}
+
+.cartoes-stat {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+@media (max-width: 700px) {
+  .cartoes-stat { grid-template-columns: 1fr; }
+}
+.cartao-stat {
+  background: var(--vendas-card);
+  border: 1px solid var(--vendas-borda);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stat-rotulo { font-size: 13px; color: var(--vendas-texto-fraco); font-weight: 600; }
+.stat-valor { font-family: var(--fonte-mono); font-size: 28px; font-weight: 700; color: var(--vendas-primario); }
+
+.painel-secao {
+  background: var(--vendas-card);
+  border: 1px solid var(--vendas-borda);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.painel-secao h3 { margin: 0 0 14px 0; font-size: 15px; }
+
+.item-vendido-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.item-vendido-nome { flex: 1; }
+.item-vendido-barra-fundo {
+  flex: 2;
+  background: #f0ede7;
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+}
+.item-vendido-barra {
+  height: 100%;
+  background: var(--vendas-secundario);
+  border-radius: 6px;
+}
+.item-vendido-qtd { font-family: var(--fonte-mono); font-weight: 700; width: 70px; text-align: right; }
+
+.lista-pagamentos { display: flex; gap: 10px; flex-wrap: wrap; }
+.pagamento-chip {
+  background: #f5f3ee;
+  border: 1px solid var(--vendas-borda);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sem-dados { color: var(--vendas-texto-fraco); font-size: 14px; }
