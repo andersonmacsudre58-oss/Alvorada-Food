@@ -569,18 +569,7 @@
   // usamos um caminho relativo — funciona tanto local quanto no Render.
   const BACKEND_URL = "/pedido";
 
-  const entregaConfig = {
-    bairros: [
-      { id: 1, nome: "São Raimundo", taxa: 5.00 },
-      { id: 2, nome: "São Cristovão", taxa: 5.00 },
-      { id: 3, nome: "Santa Barbara", taxa: 3.00 },
-      { id: 4, nome: "Alvorada 1", taxa: 3.00 },
-      { id: 5, nome: "Alvorada 2", taxa: 0.00 },
-    ],
-    taxaPadrao: 7.00,
-    freteGratisAcimaDe: 100.00,
-    bairrosComComplemento: [4, 5],
-  };
+  let entregaConfig = { bairros: [], taxaPadrao: 7, freteGratisAcimaDe: null }; // preenchido via /api/entrega
 
   const formatarReais = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -672,23 +661,36 @@
     renderCardapio();
   }
 
+  // ================= BAIRROS DE ENTREGA (rodapé + select do checkout) =================
+  const bairroSelect = document.getElementById("bairro");
+
+  function renderEntrega() {
+    document.getElementById("bairrosList").innerHTML = entregaConfig.bairros
+      .map(b => `<span>${b.nome} · ${b.taxa === 0 ? "grátis" : formatarReais(b.taxa)}</span>`)
+      .join("");
+    document.getElementById("freteGratisValor").textContent =
+      entregaConfig.freteGratisAcimaDe !== null ? formatarReais(entregaConfig.freteGratisAcimaDe) : "—";
+
+    bairroSelect.innerHTML = entregaConfig.bairros
+      .map(b => `<option value="${b.id}">${b.nome} — ${formatarReais(b.taxa)}</option>`)
+      .join("") + `<option value="outro">Outro bairro — ${formatarReais(entregaConfig.taxaPadrao)}</option>`;
+  }
+
+  async function carregarEntrega() {
+    try {
+      const resposta = await fetch("/api/entrega");
+      entregaConfig = await resposta.json();
+    } catch (erro) {
+      console.error("Não foi possível carregar os bairros de entrega:", erro);
+    }
+    renderEntrega();
+    atualizarComplemento();
+  }
+
   carregarProdutos();
   carregarHorario();
+  carregarEntrega();
   setInterval(carregarHorario, 60000); // reconfere o horário a cada 1 min
-
-
-
-  // ================= RENDER LISTA DE BAIRROS (rodapé) =================
-  document.getElementById("bairrosList").innerHTML = entregaConfig.bairros
-    .map(b => `<span>${b.nome} · ${formatarReais(b.taxa) === "R$ 0,00" ? "grátis" : formatarReais(b.taxa)}</span>`)
-    .join("");
-  document.getElementById("freteGratisValor").textContent = formatarReais(entregaConfig.freteGratisAcimaDe);
-
-  // ================= RENDER SELECT DE BAIRROS (checkout) =================
-  const bairroSelect = document.getElementById("bairro");
-  bairroSelect.innerHTML = entregaConfig.bairros
-    .map(b => `<option value="${b.id}">${b.nome} — ${formatarReais(b.taxa)}</option>`)
-    .join("") + `<option value="outro">Outro bairro — ${formatarReais(entregaConfig.taxaPadrao)}</option>`;
 
   // ================= CONTROLES DE QUANTIDADE =================
   function atualizarQtyNaTela(id) {
@@ -834,7 +836,8 @@
 
   function atualizarComplemento() {
     const bairroVal = bairroSelect.value;
-    const precisa = bairroVal !== "outro" && entregaConfig.bairrosComComplemento.includes(Number(bairroVal));
+    const bairroObj = entregaConfig.bairros.find(b => String(b.id) === bairroVal);
+    const precisa = bairroVal !== "outro" && !!bairroObj?.precisaComplemento;
     campoComplemento.style.display = precisa ? "block" : "none";
     atualizarTotais();
   }
@@ -882,7 +885,7 @@
       endereco = document.getElementById("endereco").value.trim();
       if (!endereco) { mostrarErro("Por favor, preencha o endereço completo."); return; }
 
-      if (bairroVal !== "outro" && entregaConfig.bairrosComComplemento.includes(Number(bairroVal))) {
+      if (bairroVal !== "outro" && !!entregaConfig.bairros.find(b => b.id === Number(bairroVal))?.precisaComplemento) {
         complemento = document.getElementById("complemento").value.trim();
         if (!complemento) { mostrarErro("Por favor, informe bloco e apartamento."); return; }
       }

@@ -26,7 +26,7 @@ let sockAtual = null;
 //  MENSAGENS
 // ----------------------------------------------------------
 // Link do site de pedidos (troque quando publicar, ex: "https://alvoradafood.onrender.com")
-const SITE_URL = "https://SEU-SITE-AQUI.onrender.com";
+const SITE_URL = "https://alvorada-food.onrender.com";
 
 function textoBoasVindas(numero) {
   const linkComIdentificacao = `${SITE_URL}?cliente=${encodeURIComponent(numero)}`;

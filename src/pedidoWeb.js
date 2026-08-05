@@ -18,6 +18,7 @@ const QRCode = require("qrcode");
 const { salvarPedido } = require("./pedidos");
 const { listarProdutos, conferirEstoque, baixarEstoque } = require("./produtos");
 const { estaAberto, obterHorariosParaApi } = require("./horario");
+const { obterConfigEntrega } = require("./entrega");
 const { criarRotasApiPainel, criarRotasEstaticasPainel } = require("../painel/server");
 
 // Porta em que essa API vai escutar.
@@ -204,6 +205,16 @@ function iniciarServidorPedidos(sock) {
     } catch (erro) {
       console.error("Erro ao listar produtos:", erro);
       res.status(500).json({ ok: false, erro: "Não foi possível carregar o cardápio." });
+    }
+  });
+
+  // Bairros de entrega + taxas, pro site montar o checkout.
+  app.get("/api/entrega", async (req, res) => {
+    try {
+      res.json(await obterConfigEntrega());
+    } catch (erro) {
+      console.error("Erro ao buscar config de entrega:", erro);
+      res.status(500).json({ ok: false, erro: "Não foi possível carregar os bairros." });
     }
   });
 
