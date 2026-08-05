@@ -56,7 +56,7 @@ function numeroParaJid(numeroDigitado) {
 }
 
 function montarResumoPedido(pedido) {
-  const nomesPagamento = { pix: "Pix", dinheiro: "Dinheiro", cartao: "Cartão" };
+  const nomesPagamento = { pix: "Pix", dinheiro: "Dinheiro", cartao: "Cartão (aproximação)" };
 
   let msg = `🌭 *Pedido recebido pelo site!*\n\n`;
   msg += `*Cliente:* ${pedido.nome}\n\n`;
@@ -77,6 +77,7 @@ function montarResumoPedido(pedido) {
   if (pedido.formaPagamento === "dinheiro" && pedido.trocoPara) {
     msg += ` (troco para ${pedido.trocoPara})`;
   }
+  msg += `\n\n✅ *Pedido confirmado com sucesso!* Já estamos preparando — chega o mais rápido possível. 🙌`;
 
   return msg;
 }

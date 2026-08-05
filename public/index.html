@@ -42,7 +42,7 @@
   .hero{
     position:relative;
     background:linear-gradient(160deg, var(--night) 0%, var(--night-2) 45%, var(--dawn) 100%);
-    padding:56px 6vw 90px;
+    padding:56px 6vw 130px;
     overflow:hidden;
     clip-path:polygon(0 0,100% 0,100% 92%,0 100%);
   }
@@ -116,7 +116,7 @@
   /* ---------- MENU ---------- */
   main{ max-width:1080px; margin:0 auto; padding:0 6vw 140px; }
   .category-block{ margin-top:64px; }
-  .category-block:first-of-type{ margin-top:-30px; }
+  .category-block:first-of-type{ margin-top:20px; }
   .category-head{
     display:flex;
     align-items:baseline;
@@ -464,7 +464,7 @@
     <footer class="site-footer">
       <p><strong>Entregamos em:</strong></p>
       <div class="bairros-list" id="bairrosList"></div>
-      <p style="margin-top:14px;">Outros bairros: taxa a combinar no pedido · Pedidos acima de <span id="freteGratisValor"></span> não pagam entrega.</p>
+      <p style="margin-top:14px;">Consulte os valores da entrega ao finalizar seu pedido.</p>
     </footer>
   </main>
 
@@ -501,9 +501,10 @@
           </div>
         </div>
 
-        <div class="field" id="campoTelefoneCliente">
-          <label for="telefoneCliente">Seu WhatsApp</label>
-          <input type="text" id="telefoneCliente" name="telefoneCliente" placeholder="Ex: 98 98227-3236">
+        <div class="field" id="campoSemWhats" style="display:none;">
+          <div style="background:#FDECEC;border:2px solid #B23A3A;border-radius:8px;padding:10px 12px;font-size:13px;color:#B23A3A;">
+            ⚠️ Pra finalizar o pedido, acesse o site pelo link que enviamos no seu WhatsApp.
+          </div>
         </div>
 
         <div class="field">
@@ -534,7 +535,7 @@
           <div class="radio-group">
             <label><input type="radio" name="pagamento" value="pix" checked> Pix</label>
             <label><input type="radio" name="pagamento" value="dinheiro"> Dinheiro</label>
-            <label><input type="radio" name="pagamento" value="cartao"> Cartão</label>
+            <label><input type="radio" name="pagamento" value="cartao"> Cartão (aproximação)</label>
           </div>
         </div>
 
@@ -559,7 +560,8 @@
 
   if (clienteJid) {
     document.getElementById("campoIdentificacaoWhats").style.display = "block";
-    document.getElementById("campoTelefoneCliente").style.display = "none";
+  } else {
+    document.getElementById("campoSemWhats").style.display = "block";
   }
 
   // ================= DADOS (mesmo padrão do bot: config/catalogo.js e config/entrega.js) =================
@@ -583,7 +585,12 @@
 
   function renderCardapio() {
     categoriasEl.innerHTML = "";
-    const categorias = [...new Set(catalogo.map(p => p.categoria))];
+    const ordemPreferida = ["Lanches", "Bebidas"];
+    const categoriasEncontradas = [...new Set(catalogo.map(p => p.categoria))];
+    const categorias = [
+      ...ordemPreferida.filter(c => categoriasEncontradas.includes(c)),
+      ...categoriasEncontradas.filter(c => !ordemPreferida.includes(c)),
+    ];
 
     categorias.forEach(cat => {
       const itens = catalogo.filter(p => p.categoria === cat);
@@ -666,10 +673,8 @@
 
   function renderEntrega() {
     document.getElementById("bairrosList").innerHTML = entregaConfig.bairros
-      .map(b => `<span>${b.nome} · ${b.taxa === 0 ? "grátis" : formatarReais(b.taxa)}</span>`)
+      .map(b => `<span>${b.nome}</span>`)
       .join("");
-    document.getElementById("freteGratisValor").textContent =
-      entregaConfig.freteGratisAcimaDe !== null ? formatarReais(entregaConfig.freteGratisAcimaDe) : "—";
 
     bairroSelect.innerHTML = entregaConfig.bairros
       .map(b => `<option value="${b.id}">${b.nome} — ${formatarReais(b.taxa)}</option>`)
@@ -873,8 +878,10 @@
     const nome = document.getElementById("nomeCliente").value.trim();
     if (!nome) { mostrarErro("Por favor, digite seu nome."); return; }
 
-    const telefoneCliente = document.getElementById("telefoneCliente").value.trim();
-    if (!clienteJid && !telefoneCliente) { mostrarErro("Por favor, digite seu WhatsApp."); return; }
+    if (!clienteJid) {
+      mostrarErro("Pra finalizar, acesse o site pelo link enviado no seu WhatsApp.");
+      return;
+    }
 
     const tipoEntrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
     let bairroNome = null, complemento = "", endereco = "";
@@ -900,8 +907,7 @@
 
     const pedido = {
       nome,
-      jidCliente: clienteJid || null,
-      numeroCliente: clienteJid ? null : telefoneCliente,
+      jidCliente: clienteJid,
       itens: itens.map(i => ({ produtoId: i.produto.id, nome: i.produto.nome, quantidade: i.qty, precoUnitario: i.produto.preco })),
       tipoEntrega,
       bairro: bairroNome,
@@ -960,7 +966,7 @@
   }
 
   function montarMensagemWhatsapp(pedido) {
-    const nomesPagamento = { pix: "Pix", dinheiro: "Dinheiro", cartao: "Cartão" };
+    const nomesPagamento = { pix: "Pix", dinheiro: "Dinheiro", cartao: "Cartão (aproximação)" };
 
     let msg = `Olá! Gostaria de fazer o seguinte pedido 🌭\n\n`;
     msg += `*Cliente:* ${pedido.nome}\n\n`;

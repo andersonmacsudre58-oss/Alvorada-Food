@@ -1,9 +1,12 @@
 -- ==========================================================
---  TABELAS DO ALVORADA FOOD NO SUPABASE
---  Cole isso no SQL Editor do Supabase e clique em "Run".
+--  SETUP COMPLETO — ALVORADA FOOD (Supabase)
+--  Pode rodar isso inteiro num projeto novo do zero, ou por
+--  cima de um projeto que já tem os dados — não duplica nada
+--  nem apaga pedidos/produtos que já existem (só os horários
+--  são sempre resetados, porque são poucos e fáceis de reescrever).
 -- ==========================================================
 
--- Pedidos (substitui o pedidos.json)
+-- Pedidos
 create table if not exists pedidos (
   id text primary key,
   status text not null default 'recebido',
@@ -23,7 +26,7 @@ create table if not exists pedidos (
   origem text
 );
 
--- Pausa geral do bot (substitui o pausa.json) — sempre 1 linha só, id fixo = 1
+-- Pausa geral do bot — sempre 1 linha só, id fixo = 1
 create table if not exists pausa (
   id smallint primary key default 1,
   pausado boolean not null default false,
@@ -31,38 +34,36 @@ create table if not exists pausa (
 );
 insert into pausa (id, pausado) values (1, false) on conflict (id) do nothing;
 
--- Pausa individual por conversa (substitui o pausaIndividual.json)
+-- Pausa individual por conversa
 create table if not exists pausa_individual (
   numero text primary key
 );
 
 -- ==========================================================
---  PRODUTOS (cardápio + estoque num lugar só)
---  Edite aqui pra: adicionar item, mudar preço, mudar estoque,
---  ou desativar um item (ativo = false) sem precisar apagar.
+--  PRODUTOS (cardápio + estoque)
 -- ==========================================================
 create table if not exists produtos (
   id integer primary key,
   nome text not null,
   categoria text not null,
   preco numeric not null,
-  estoque numeric not null default 0,   -- quantidade disponível agora
-  unidade text not null default 'un',   -- ex: "un", "kg", "L", "porção"
-  descricao text,                       -- opcional, aparece no card do site
-  ativo boolean not null default true   -- false = não aparece no site
+  estoque numeric not null default 0,
+  unidade text not null default 'un',
+  descricao text,
+  ativo boolean not null default true
 );
 
 insert into produtos (id, nome, categoria, preco, estoque, unidade, descricao, ativo) values
-  (1, 'Dogão Completo', 'Lanches', 15.00, 30, 'un', 'Pão, salsicha, molho da casa, milho, batata palha e temperos.', true),
-  (2, 'Macarronada', 'Lanches', 20.00, 20, 'un', 'Porção generosa, do jeito que a casa faz.', true),
-  (3, 'Refrigerante Coca-Cola (lata)', 'Bebidas', 5.00, 50, 'un', 'Geladinha, 350ml.', true),
-  (4, 'Refrigerante Guaraná (200 ml)', 'Bebidas', 2.00, 50, 'un', 'Porção individual, geladinha.', true)
+  (1, 'Dogão Completo', 'Lanches', 15.00, 30, 'un', 'Pão, salsicha, molho da casa, milho, ervilha, batata palha e salada.', true),
+  (2, 'Macarronada', 'Lanches', 20.00, 20, 'un', 'Calabresa, ovo, queijo ralado, milho, ervilha e batata palha.', true),
+  (3, 'Refrigerante Coca-Cola (lata)', 'Bebidas', 5.00, 10, 'un', 'Geladinha, 350ml.', true),
+  (4, 'Refrigerante Guaraná (200 ml)', 'Bebidas', 2.00, 10, 'un', 'Porção individual, geladinha.', false),
+  (5, 'Refrigerante Coca-Cola Zero (lata)', 'Bebidas', 5.00, 10, 'un', 'Geladinha, 350ml.', true)
 on conflict (id) do nothing;
 
 -- ==========================================================
 --  HORÁRIO DE FUNCIONAMENTO
---  aberto = false -> fechado o dia inteiro (ex: domingo)
---  abre/fecha em formato 24h (ex: 18:00, 23:00)
+--  aberto = false -> fechado o dia inteiro
 -- ==========================================================
 create table if not exists horario_funcionamento (
   dia_semana smallint primary key, -- 0=domingo, 1=segunda ... 6=sábado
@@ -71,20 +72,19 @@ create table if not exists horario_funcionamento (
   fecha time
 );
 
+delete from horario_funcionamento;
+
 insert into horario_funcionamento (dia_semana, aberto, abre, fecha) values
-  (0, false, null, null),
-  (1, true, '18:00', '23:00'),
-  (2, true, '18:00', '23:00'),
-  (3, true, '18:00', '23:00'),
-  (4, true, '18:00', '23:00'),
-  (5, true, '18:00', '23:59'),
-  (6, true, '18:00', '23:59')
-on conflict (dia_semana) do nothing;
+  (0, true,  '18:00', '23:00'), -- domingo
+  (1, false, null,    null),    -- segunda (fechado)
+  (2, true,  '18:00', '23:59'), -- terça
+  (3, false, null,    null),    -- quarta (fechado)
+  (4, false, null,    null),    -- quinta (fechado)
+  (5, true,  '18:00', '23:00'), -- sexta
+  (6, true,  '18:00', '23:00'); -- sábado
 
 -- ==========================================================
 --  BAIRROS DE ENTREGA + TAXAS
---  Edite aqui pra adicionar bairro, mudar taxa, ou marcar se
---  precisa perguntar bloco/apartamento (ex: condomínios).
 -- ==========================================================
 create table if not exists bairros (
   id integer primary key,
@@ -102,8 +102,7 @@ insert into bairros (id, nome, taxa, precisa_complemento, ativo) values
   (5, 'Alvorada 2', 0.00, true, true)
 on conflict (id) do nothing;
 
--- Configuração geral de entrega (taxa pra bairros fora da lista, frete grátis).
--- Sempre 1 linha só, id fixo = 1.
+-- Configuração geral de entrega (taxa pra bairros fora da lista, frete grátis)
 create table if not exists config_entrega (
   id smallint primary key default 1,
   taxa_padrao numeric not null default 7.00,
@@ -112,3 +111,9 @@ create table if not exists config_entrega (
 insert into config_entrega (id, taxa_padrao, frete_gratis_acima_de)
   values (1, 7.00, 100.00)
   on conflict (id) do nothing;
+
+-- Confere tudo:
+select * from produtos order by categoria, id;
+select * from horario_funcionamento order by dia_semana;
+select * from bairros order by id;
+select * from config_entrega;
