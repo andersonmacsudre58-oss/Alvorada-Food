@@ -16,7 +16,9 @@ const express = require("express");
 const path = require("path");
 const QRCode = require("qrcode");
 const { salvarPedido } = require("./pedidos");
-const { criarRotasPainel } = require("../painel/server");
+const { listarProdutos, conferirEstoque, baixarEstoque } = require("./produtos");
+const { estaAberto, obterHorariosParaApi } = require("./horario");
+const { criarRotasApiPainel, criarRotasEstaticasPainel } = require("../painel/server");
 
 // Porta em que essa API vai escutar.
 const PORTA_PEDIDOS = process.env.PORTA_PEDIDOS || process.env.PORT || 3333;
@@ -98,8 +100,9 @@ function iniciarServidorPedidos(sock) {
   app.post("/pedido", async (req, res) => {
     try {
       const dados = req.body;
+      const temIdentificacao = dados && (dados.jidCliente || dados.numeroCliente);
 
-      if (!dados || !dados.numeroCliente || !dados.nome || !Array.isArray(dados.itens) || dados.itens.length === 0) {
+      if (!dados || !temIdentificacao || !dados.nome || !Array.isArray(dados.itens) || dados.itens.length === 0) {
         return res.status(400).json({ ok: false, erro: "Dados do pedido incompletos." });
       }
 
@@ -107,7 +110,22 @@ function iniciarServidorPedidos(sock) {
         return res.status(503).json({ ok: false, erro: "O WhatsApp ainda não está conectado. Tente novamente em instantes." });
       }
 
-      const jidCliente = numeroParaJid(dados.numeroCliente);
+      if (!(await estaAberto())) {
+        return res.status(423).json({ ok: false, erro: "Estamos fechados no momento. Confira nosso horário de funcionamento." });
+      }
+
+      const itensSemEstoque = await conferirEstoque(dados.itens);
+      if (itensSemEstoque.length > 0) {
+        const detalhes = itensSemEstoque
+          .map((i) => `${i.nome} (disponível: ${i.disponivel})`)
+          .join(", ");
+        return res.status(409).json({ ok: false, erro: `Sem estoque suficiente: ${detalhes}` });
+      }
+
+      // Se o cliente veio pelo link do WhatsApp, já temos o jid exato dele
+      // (funciona até pra números com @lid, que não têm telefone real exposto).
+      // Senão, monta o jid a partir do número digitado manualmente.
+      const jidCliente = dados.jidCliente || numeroParaJid(dados.numeroCliente);
       const resumo = montarResumoPedido(dados);
 
       // Manda a mensagem pro cliente automaticamente — como é o mesmo número
@@ -115,7 +133,7 @@ function iniciarServidorPedidos(sock) {
       // com esse cliente no WhatsApp.
       await sock.sendMessage(jidCliente, { text: resumo });
 
-      salvarPedido({
+      await salvarPedido({
         cliente: jidCliente,
         nome: dados.nome,
         itens: dados.itens,
@@ -131,10 +149,15 @@ function iniciarServidorPedidos(sock) {
         origem: "site",
       });
 
+      await baixarEstoque(dados.itens);
+
       res.json({ ok: true });
     } catch (erro) {
       console.error("Erro ao processar pedido do site:", erro);
-      res.status(500).json({ ok: false, erro: "Não foi possível enviar o pedido pelo WhatsApp." });
+      res.status(500).json({
+        ok: false,
+        erro: `Não foi possível enviar o pedido pelo WhatsApp (${erro.message || "erro desconhecido"}).`,
+      });
     }
   });
 
@@ -174,8 +197,32 @@ function iniciarServidorPedidos(sock) {
     `);
   });
 
-  // Painel de cozinha + vendas, disponível em /painel
-  app.use("/painel", criarRotasPainel());
+  // Cardápio + estoque em tempo real, pro site montar a tela.
+  app.get("/api/produtos", async (req, res) => {
+    try {
+      res.json(await listarProdutos());
+    } catch (erro) {
+      console.error("Erro ao listar produtos:", erro);
+      res.status(500).json({ ok: false, erro: "Não foi possível carregar o cardápio." });
+    }
+  });
+
+  // Horário de funcionamento + se está aberto agora, pro site mostrar/bloquear pedido.
+  app.get("/api/horario", async (req, res) => {
+    try {
+      res.json(await obterHorariosParaApi());
+    } catch (erro) {
+      console.error("Erro ao buscar horário:", erro);
+      res.status(500).json({ ok: false, erro: "Não foi possível carregar o horário." });
+    }
+  });
+
+  // API do painel (cozinha + vendas) fica na raiz, porque é assim que
+  // o painel/app.js chama: fetch("/api/pedidos/ativos") etc.
+  app.use("/api", criarRotasApiPainel());
+
+  // Tela do painel (HTML/CSS/JS) fica em /painel
+  app.use("/painel", criarRotasEstaticasPainel());
 
   // Serve o site (index.html e afins) direto pela mesma URL do bot,
   // já que ele está numa pasta "public" dentro do projeto.

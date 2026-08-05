@@ -219,6 +219,29 @@
   }
   .add-btn:hover{ filter:brightness(1.05); }
 
+  .card-esgotado{ opacity:0.6; }
+  .badge-esgotado{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.05em;
+    background:#B23A3A;
+    color:#fff;
+    padding:6px 12px;
+    border-radius:6px;
+  }
+
+  .aviso-fechado{
+    background:var(--night);
+    color:var(--paper);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:14px 18px;
+    border-radius:10px;
+    margin:-30px 0 30px;
+    border:2px solid var(--ink);
+  }
+
   /* ---------- FOOTER ---------- */
   .site-footer{
     margin-top:90px;
@@ -435,6 +458,7 @@
   </header>
 
   <main id="cardapio">
+    <div id="avisoFechado" class="aviso-fechado" style="display:none;"></div>
     <div id="categorias"></div>
 
     <footer class="site-footer">
@@ -445,7 +469,7 @@
   </main>
 
   <div class="cart-tab hidden" id="cartTab">
-    🧾 <span id="cartCount">0</span> item(ns) · <span id="cartTotalTab">R$0,00</span>
+    🧾 Finalizar pedido — <span id="cartCount">0</span> item(ns) · <span id="cartTotalTab">R$0,00</span>
   </div>
 
   <div class="overlay" id="overlay"></div>
@@ -471,9 +495,15 @@
           <input type="text" id="nomeCliente" name="nomeCliente" placeholder="Como podemos te chamar?" required>
         </div>
 
-        <div class="field">
+        <div class="field" id="campoIdentificacaoWhats" style="display:none;">
+          <div style="background:var(--paper-2);border:2px solid var(--ink);border-radius:8px;padding:10px 12px;font-size:13px;">
+            ✅ Pedido vinculado ao seu WhatsApp — a confirmação vai cair direto na nossa conversa.
+          </div>
+        </div>
+
+        <div class="field" id="campoTelefoneCliente">
           <label for="telefoneCliente">Seu WhatsApp</label>
-          <input type="text" id="telefoneCliente" name="telefoneCliente" placeholder="Ex: 98 98227-3236" required>
+          <input type="text" id="telefoneCliente" name="telefoneCliente" placeholder="Ex: 98 98227-3236">
         </div>
 
         <div class="field">
@@ -515,30 +545,29 @@
 
         <p class="error-msg" id="errorMsg" style="display:none;"></p>
 
-        <button type="submit" class="send-btn" id="sendBtn">Enviar pedido no WhatsApp</button>
-        <p class="hint">Vamos abrir o WhatsApp com o resumo do pedido pronto — é só conferir e apertar enviar.</p>
+        <button type="submit" class="send-btn" id="sendBtn">Finalizar pedido</button>
+        <p class="hint" id="sendHint">Assim que você finalizar, o pedido cai direto na conversa do WhatsApp. 🌭</p>
       </form>
     </div>
   </aside>
 
 <script>
+  // Se o cliente chegou pelo link enviado no WhatsApp, o bot já manda a
+  // identificação dele (jid) como parâmetro — assim não precisa digitar o número.
+  const parametrosURL = new URLSearchParams(window.location.search);
+  const clienteJid = parametrosURL.get("cliente");
+
+  if (clienteJid) {
+    document.getElementById("campoIdentificacaoWhats").style.display = "block";
+    document.getElementById("campoTelefoneCliente").style.display = "none";
+  }
+
   // ================= DADOS (mesmo padrão do bot: config/catalogo.js e config/entrega.js) =================
   const NUMERO_WHATSAPP = "5598982273236";
 
   // Endereço da API de pedidos. Como o site é servido pelo próprio bot.js,
   // usamos um caminho relativo — funciona tanto local quanto no Render.
   const BACKEND_URL = "/pedido";
-
-  const catalogo = [
-    { id: 1, nome: "Dogão Completo", categoria: "Lanches", preco: 15.00,
-      descricao: "Pão, salsicha, molho da casa, milho, batata palha e temperos." },
-    { id: 2, nome: "Macarronada", categoria: "Lanches", preco: 20.00,
-      descricao: "Porção generosa, do jeito que a casa faz." },
-    { id: 3, nome: "Refrigerante Coca-Cola (lata)", categoria: "Bebidas", preco: 5.00,
-      descricao: "Geladinha, 350ml." },
-    { id: 4, nome: "Refrigerante Guaraná (200 ml)", categoria: "Bebidas", preco: 2.00,
-      descricao: "Porção individual, geladinha." },
-  ];
 
   const entregaConfig = {
     bairros: [
@@ -555,45 +584,99 @@
 
   const formatarReais = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  let catalogo = []; // preenchido depois de buscar em /api/produtos
+
   // ================= ESTADO =================
   const carrinho = {}; // { produtoId: quantidade }
 
-  // ================= RENDER CARDÁPIO =================
+  // ================= RENDER CARDÁPIO (a partir do que vier do Supabase) =================
   const categoriasEl = document.getElementById("categorias");
-  const categorias = [...new Set(catalogo.map(p => p.categoria))];
 
-  categorias.forEach(cat => {
-    const itens = catalogo.filter(p => p.categoria === cat);
-    const bloco = document.createElement("div");
-    bloco.className = "category-block";
-    bloco.innerHTML = `
-      <div class="category-head">
-        <h2>${cat}</h2>
-        <span class="category-count">${itens.length} ${itens.length === 1 ? "item" : "itens"}</span>
-      </div>
-      <div class="category-rule"></div>
-      <div class="cards">
-        ${itens.map(p => `
-          <div class="card" data-id="${p.id}">
-            <div class="card-top">
-              <h3>${p.nome}</h3>
-              <span class="price-tag">${formatarReais(p.preco)}</span>
-            </div>
-            <p class="desc">${p.descricao}</p>
-            <div class="card-actions">
-              <div class="stepper" data-id="${p.id}">
-                <button type="button" class="dec">−</button>
-                <span class="qty">0</span>
-                <button type="button" class="inc">+</button>
+  function renderCardapio() {
+    categoriasEl.innerHTML = "";
+    const categorias = [...new Set(catalogo.map(p => p.categoria))];
+
+    categorias.forEach(cat => {
+      const itens = catalogo.filter(p => p.categoria === cat);
+      const bloco = document.createElement("div");
+      bloco.className = "category-block";
+      bloco.innerHTML = `
+        <div class="category-head">
+          <h2>${cat}</h2>
+          <span class="category-count">${itens.length} ${itens.length === 1 ? "item" : "itens"}</span>
+        </div>
+        <div class="category-rule"></div>
+        <div class="cards">
+          ${itens.map(p => {
+            const esgotado = p.estoque <= 0;
+            return `
+            <div class="card${esgotado ? " card-esgotado" : ""}" data-id="${p.id}">
+              <div class="card-top">
+                <h3>${p.nome}</h3>
+                <span class="price-tag">${formatarReais(p.preco)}</span>
               </div>
-              <button type="button" class="add-btn" data-id="${p.id}">Adicionar</button>
+              ${p.descricao ? `<p class="desc">${p.descricao}</p>` : ""}
+              ${esgotado
+                ? `<div class="card-actions"><span class="badge-esgotado">ESGOTADO</span></div>`
+                : `<div class="card-actions">
+                    <div class="stepper" data-id="${p.id}">
+                      <button type="button" class="dec">−</button>
+                      <span class="qty">0</span>
+                      <button type="button" class="inc">+</button>
+                    </div>
+                    <button type="button" class="add-btn" data-id="${p.id}">Adicionar</button>
+                  </div>`
+              }
             </div>
-          </div>
-        `).join("")}
-      </div>
-    `;
-    categoriasEl.appendChild(bloco);
-  });
+          `;}).join("")}
+        </div>
+      `;
+      categoriasEl.appendChild(bloco);
+    });
+  }
+
+  // ================= HORÁRIO DE FUNCIONAMENTO =================
+  let abertoAgora = true; // assume aberto até a API responder
+
+  async function carregarHorario() {
+    try {
+      const resposta = await fetch("/api/horario");
+      const dados = await resposta.json();
+      abertoAgora = dados.abertoAgora;
+
+      const avisoFechado = document.getElementById("avisoFechado");
+      if (!abertoAgora) {
+        avisoFechado.style.display = "block";
+        const hoje = dados.dias.find(d => d.aberto);
+        avisoFechado.textContent = hoje
+          ? `😴 Estamos fechados agora. Funcionamos das ${hoje.abre} às ${hoje.fecha}.`
+          : "😴 Estamos fechados no momento.";
+      } else {
+        avisoFechado.style.display = "none";
+      }
+    } catch (erro) {
+      console.warn("Não foi possível carregar o horário:", erro);
+    }
+  }
+
+  // ================= CARREGAMENTO INICIAL =================
+  async function carregarProdutos() {
+    try {
+      const resposta = await fetch("/api/produtos");
+      catalogo = await resposta.json();
+    } catch (erro) {
+      console.error("Não foi possível carregar o cardápio:", erro);
+      categoriasEl.innerHTML = `<p class="sem-dados">Não foi possível carregar o cardápio agora. Recarregue a página.</p>`;
+      return;
+    }
+    renderCardapio();
+  }
+
+  carregarProdutos();
+  carregarHorario();
+  setInterval(carregarHorario, 60000); // reconfere o horário a cada 1 min
+
+
 
   // ================= RENDER LISTA DE BAIRROS (rodapé) =================
   document.getElementById("bairrosList").innerHTML = entregaConfig.bairros
@@ -633,8 +716,7 @@
       const atual = carrinho[id] || 0;
       carrinho[id] = atual > 0 ? atual : 1;
       atualizarQtyNaTela(id);
-      renderCarrinho();
-      abrirReceipt();
+      renderCarrinho(); // só atualiza o contador flutuante — o cupom só abre quando o cliente clicar nele
     }
   });
 
@@ -774,6 +856,11 @@
     e.preventDefault();
     errorMsg.style.display = "none";
 
+    if (!abertoAgora) {
+      mostrarErro("Estamos fechados no momento — não é possível finalizar o pedido agora.");
+      return;
+    }
+
     const itens = itensNoCarrinho();
     if (itens.length === 0) {
       mostrarErro("Seu carrinho está vazio.");
@@ -784,7 +871,7 @@
     if (!nome) { mostrarErro("Por favor, digite seu nome."); return; }
 
     const telefoneCliente = document.getElementById("telefoneCliente").value.trim();
-    if (!telefoneCliente) { mostrarErro("Por favor, digite seu WhatsApp."); return; }
+    if (!clienteJid && !telefoneCliente) { mostrarErro("Por favor, digite seu WhatsApp."); return; }
 
     const tipoEntrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
     let bairroNome = null, complemento = "", endereco = "";
@@ -810,8 +897,9 @@
 
     const pedido = {
       nome,
-      numeroCliente: telefoneCliente,
-      itens: itens.map(i => ({ nome: i.produto.nome, quantidade: i.qty, precoUnitario: i.produto.preco })),
+      jidCliente: clienteJid || null,
+      numeroCliente: clienteJid ? null : telefoneCliente,
+      itens: itens.map(i => ({ produtoId: i.produto.id, nome: i.produto.nome, quantidade: i.qty, precoUnitario: i.produto.preco })),
       tipoEntrega,
       bairro: bairroNome,
       complemento: complemento || null,
@@ -827,9 +915,9 @@
     sendBtn.disabled = true;
     sendBtn.textContent = "Enviando...";
 
-    const enviadoAutomaticamente = await enviarParaBackend(pedido);
+    const resultado = await enviarParaBackend(pedido);
 
-    if (enviadoAutomaticamente) {
+    if (resultado.ok) {
       sendBtn.textContent = "Pedido enviado! ✅";
       cartItemsEl.innerHTML = `<p class="empty-cart">Pedido enviado! Você vai receber a confirmação no seu WhatsApp. 🌭</p>`;
       totalsBox.style.display = "none";
@@ -837,27 +925,34 @@
       for (const id in carrinho) carrinho[id] = 0;
       renderCarrinho();
     } else {
-      // Backend ainda não disponível: abre o WhatsApp com o pedido pronto pra enviar manualmente.
+      // Backend não confirmou o envio: abre o WhatsApp com o pedido pronto,
+      // mas o cliente PRECISA apertar enviar por lá — avisamos isso na tela.
+      console.warn("Envio automático não confirmado, motivo:", resultado.motivo);
+      mostrarErro("Não conseguimos confirmar o envio automático. Uma aba do WhatsApp foi aberta com seu pedido pronto — é só apertar enviar por lá pra garantir.");
       const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(montarMensagemWhatsapp(pedido))}`;
       window.open(url, "_blank");
       sendBtn.disabled = false;
-      sendBtn.textContent = "Enviar pedido no WhatsApp";
+      sendBtn.textContent = "Finalizar pedido";
     }
   });
 
   async function enviarParaBackend(pedido) {
-    if (!BACKEND_URL || BACKEND_URL.includes("SEU-SERVIDOR-AQUI")) return false;
+    if (!BACKEND_URL || BACKEND_URL.includes("SEU-SERVIDOR-AQUI")) {
+      return { ok: false, motivo: "BACKEND_URL não configurado" };
+    }
     try {
       const resposta = await fetch(BACKEND_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(pedido),
       });
-      if (!resposta.ok) return false;
-      const dados = await resposta.json();
-      return dados.ok === true;
+      const dados = await resposta.json().catch(() => null);
+      if (!resposta.ok) {
+        return { ok: false, motivo: `HTTP ${resposta.status} — ${dados?.erro || "sem detalhes"}` };
+      }
+      return { ok: dados?.ok === true, motivo: dados?.erro || "resposta sem ok:true" };
     } catch (erro) {
-      return false; // backend fora do ar ou ainda não publicado — cai no fallback
+      return { ok: false, motivo: `Erro de rede: ${erro.message}` };
     }
   }
 

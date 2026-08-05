@@ -1,47 +1,38 @@
+const { createClient } = require("@supabase/supabase-js");
+
 // ==========================================================
-//  PAUSA INDIVIDUAL (por conversa)
-//  Permite pausar o bot só para um cliente específico, sem
-//  afetar o atendimento automático dos outros.
-//
+//  PAUSA INDIVIDUAL (por conversa) — Supabase
+//  Permite pausar o bot só para um cliente específico.
 //  Como usar: entre na conversa do cliente pelo WhatsApp
-//  conectado ao bot (o mesmo celular/computador) e mande:
+//  conectado ao bot e mande:
 //    "oi"       -> pausa o bot só para esse cliente
 //    "obrigado" -> volta o bot a responder esse cliente
 // ==========================================================
 
-const fs = require("fs");
-const path = require("path");
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-const caminhoArquivo = path.join(__dirname, "..", "config", "pausaIndividual.json");
+async function estaPausadoIndividualmente(numero) {
+  const { data, error } = await supabase
+    .from("pausa_individual")
+    .select("numero")
+    .eq("numero", numero)
+    .maybeSingle();
 
-function lerLista() {
-  try {
-    const conteudo = fs.readFileSync(caminhoArquivo, "utf-8");
-    return JSON.parse(conteudo);
-  } catch (erro) {
-    return [];
+  if (error) {
+    console.log("⚠️ Erro ao checar pausa individual no Supabase:", error.message);
+    return false;
   }
+  return !!data;
 }
 
-function salvarLista(lista) {
-  fs.writeFileSync(caminhoArquivo, JSON.stringify(lista, null, 2), "utf-8");
+async function pausarIndividual(numero) {
+  const { error } = await supabase.from("pausa_individual").upsert({ numero });
+  if (error) console.log("⚠️ Erro ao pausar individual no Supabase:", error.message);
 }
 
-function estaPausadoIndividualmente(numero) {
-  return lerLista().includes(numero);
-}
-
-function pausarIndividual(numero) {
-  const lista = lerLista();
-  if (!lista.includes(numero)) {
-    lista.push(numero);
-    salvarLista(lista);
-  }
-}
-
-function despausarIndividual(numero) {
-  const lista = lerLista().filter((n) => n !== numero);
-  salvarLista(lista);
+async function despausarIndividual(numero) {
+  const { error } = await supabase.from("pausa_individual").delete().eq("numero", numero);
+  if (error) console.log("⚠️ Erro ao despausar individual no Supabase:", error.message);
 }
 
 module.exports = { estaPausadoIndividualmente, pausarIndividual, despausarIndividual };

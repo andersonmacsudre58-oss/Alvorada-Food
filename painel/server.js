@@ -1,12 +1,14 @@
 // ==========================================================
 //  PAINEL (Cozinha + Vendas)
-//  Exporta um Router do Express com as rotas de API que o
-//  painel/app.js consome, e serve os arquivos estáticos
-//  (index.html, app.js, styles.css) desta mesma pasta.
+//  Exporta duas partes:
+//   - criarRotasApiPainel(): as rotas /pedidos/ativos, /pedidos/:id/status
+//     e /vendas, montadas em "/api" pelo servidor principal (pedidoWeb.js).
+//     Ficam na raiz do site porque o painel/app.js chama fetch("/api/...").
+//   - criarRotasEstaticasPainel(): serve o HTML/CSS/JS do painel,
+//     montado em "/painel" pelo servidor principal.
 // ==========================================================
 
 const express = require("express");
-const path = require("path");
 const { listarPedidos, atualizarStatusPedido } = require("../src/pedidos");
 
 const STATUS_ATIVOS = ["recebido", "preparando", "pronto"];
@@ -29,8 +31,10 @@ function pedidoDentroDoPeriodo(pedido, periodo) {
   return true; // "tudo"
 }
 
-function calcularVendas(periodo) {
-  const pedidosEntregues = listarPedidos().filter(
+// Agora é assíncrona porque listarPedidos() busca os dados no Supabase.
+async function calcularVendas(periodo) {
+  const todosPedidos = await listarPedidos();
+  const pedidosEntregues = todosPedidos.filter(
     (p) => p.status === "entregue" && pedidoDentroDoPeriodo(p, periodo)
   );
 
@@ -61,46 +65,63 @@ function calcularVendas(periodo) {
   return { faturamento, totalPedidos, ticketMedio, itensVendidos, porFormaPagamento };
 }
 
-function criarRotasPainel() {
+function criarRotasApiPainel() {
   const router = express.Router();
   router.use(express.json());
 
-  router.get("/api/pedidos/ativos", (req, res) => {
-    const ativos = listarPedidos()
-      .filter((p) => STATUS_ATIVOS.includes(p.status))
-      .sort((a, b) => new Date(a.dataHoraISO) - new Date(b.dataHoraISO)); // mais antigo primeiro
+  router.get("/pedidos/ativos", async (req, res) => {
+    try {
+      const todosPedidos = await listarPedidos();
+      const ativos = todosPedidos
+        .filter((p) => STATUS_ATIVOS.includes(p.status))
+        .sort((a, b) => new Date(a.dataHoraISO) - new Date(b.dataHoraISO)); // mais antigo primeiro
 
-    res.json(ativos);
-  });
-
-  router.post("/api/pedidos/:id/status", (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body || {};
-
-    if (!STATUS_VALIDOS.includes(status)) {
-      return res.status(400).json({ ok: false, erro: "Status inválido." });
+      res.json(ativos);
+    } catch (erro) {
+      console.error("Erro ao listar pedidos ativos:", erro);
+      res.status(500).json({ ok: false, erro: "Não foi possível carregar os pedidos." });
     }
+  });
 
-    const pedidoAtualizado = atualizarStatusPedido(id, status);
-    if (!pedidoAtualizado) {
-      return res.status(404).json({ ok: false, erro: "Pedido não encontrado." });
+  router.post("/pedidos/:id/status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body || {};
+
+      if (!STATUS_VALIDOS.includes(status)) {
+        return res.status(400).json({ ok: false, erro: "Status inválido." });
+      }
+
+      const pedidoAtualizado = await atualizarStatusPedido(id, status);
+      if (!pedidoAtualizado) {
+        return res.status(404).json({ ok: false, erro: "Pedido não encontrado." });
+      }
+
+      res.json({ ok: true, pedido: pedidoAtualizado });
+    } catch (erro) {
+      console.error("Erro ao atualizar status do pedido:", erro);
+      res.status(500).json({ ok: false, erro: "Não foi possível atualizar o pedido." });
     }
-
-    res.json({ ok: true, pedido: pedidoAtualizado });
   });
 
-  router.get("/api/vendas", (req, res) => {
-    const periodo = ["hoje", "semana", "mes", "tudo"].includes(req.query.periodo)
-      ? req.query.periodo
-      : "hoje";
+  router.get("/vendas", async (req, res) => {
+    try {
+      const periodo = ["hoje", "semana", "mes", "tudo"].includes(req.query.periodo)
+        ? req.query.periodo
+        : "hoje";
 
-    res.json(calcularVendas(periodo));
+      res.json(await calcularVendas(periodo));
+    } catch (erro) {
+      console.error("Erro ao calcular vendas:", erro);
+      res.status(500).json({ ok: false, erro: "Não foi possível calcular as vendas." });
+    }
   });
-
-  // Serve index.html, app.js e styles.css desta mesma pasta.
-  router.use(express.static(__dirname));
 
   return router;
 }
 
-module.exports = { criarRotasPainel };
+function criarRotasEstaticasPainel() {
+  return express.static(__dirname);
+}
+
+module.exports = { criarRotasApiPainel, criarRotasEstaticasPainel };

@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -24,13 +26,14 @@ let sockAtual = null;
 //  MENSAGENS
 // ----------------------------------------------------------
 // Link do site de pedidos (troque quando publicar, ex: "https://alvoradafood.onrender.com")
-const SITE_URL = "https://alvorada-food.onrender.com";
+const SITE_URL = "https://SEU-SITE-AQUI.onrender.com";
 
-function textoBoasVindas() {
+function textoBoasVindas(numero) {
+  const linkComIdentificacao = `${SITE_URL}?cliente=${encodeURIComponent(numero)}`;
   return (
     "🌭 *Bem-vindo(a) à Alvorada Food!* 🌭\n\n" +
     "Todo o nosso atendimento agora é pelo site — lá você vê o cardápio, monta seu carrinho e finaliza o pedido em poucos toques:\n\n" +
-    `🔗 ${SITE_URL}\n\n` +
+    `🔗 ${linkComIdentificacao}\n\n` +
     "Assim que você finalizar o pedido por lá, ele já cai certinho aqui na nossa conversa, com todos os detalhes. 😉"
   );
 }
@@ -40,26 +43,26 @@ function textoBoasVindas() {
  * pedido por aqui — só trata comandos de administrador (pausar/despausar
  * o bot) e devolve a mensagem de boas-vindas com o link do site.
  */
-function processarMensagem(numero, textoOriginal) {
+async function processarMensagem(numero, textoOriginal) {
   const texto = textoOriginal.trim().toLowerCase();
 
   // Comandos de administrador funcionam mesmo com o bot pausado
   if (adminConfig.numerosAdmin.includes(numero)) {
     if (texto === "pausar bot" || texto === "pausar") {
-      pausar();
+      await pausar();
       return "🔴 Bot pausado. Os clientes vão receber a mensagem de indisponibilidade até você digitar *voltar bot*.";
     }
     if (texto === "voltar bot" || texto === "despausar" || texto === "despausar bot") {
-      despausar();
+      await despausar();
       return "🟢 Bot reativado! Já está respondendo normalmente.";
     }
   }
 
-  if (estaPausado()) {
-    return mensagemPausa();
+  if (await estaPausado()) {
+    return await mensagemPausa();
   }
 
-  return textoBoasVindas();
+  return textoBoasVindas(numero);
 }
 
 // ----------------------------------------------------------
@@ -132,17 +135,17 @@ async function iniciarBot() {
       if (msg.key.fromMe) {
         const textoNormalizado = textoRecebido.trim().toLowerCase();
         if (textoNormalizado === "oi") {
-          pausarIndividual(numero);
+          await pausarIndividual(numero);
         } else if (textoNormalizado === "obrigado") {
-          despausarIndividual(numero);
+          await despausarIndividual(numero);
         }
         continue; // nunca processa o fluxo do bot para mensagens enviadas por nós mesmos
       }
 
       // Cliente pausado individualmente: bot não responde até você mandar "obrigado" na conversa dele.
-      if (estaPausadoIndividualmente(numero)) continue;
+      if (await estaPausadoIndividualmente(numero)) continue;
 
-      const resposta = processarMensagem(numero, textoRecebido);
+      const resposta = await processarMensagem(numero, textoRecebido);
       await sock.sendMessage(numero, { text: resposta });
     }
   });

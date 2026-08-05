@@ -1,42 +1,51 @@
-const fs = require("fs");
-const path = require("path");
+const { createClient } = require("@supabase/supabase-js");
 
-const caminhoArquivo = path.join(__dirname, "..", "config", "pausa.json");
+// ==========================================================
+//  PAUSA GERAL DO BOT (Supabase)
+//  Guarda numa tabela de 1 linha só (id fixo = 1) se o bot
+//  está pausado ou não, pra sobreviver a reinícios do servidor.
+// ==========================================================
 
-function lerEstado() {
-  try {
-    const conteudo = fs.readFileSync(caminhoArquivo, "utf-8");
-    return JSON.parse(conteudo);
-  } catch (erro) {
-    return {
-      pausado: false,
-      mensagem: "🙏 No momento não estamos aceitando pedidos por aqui.",
-    };
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+const MENSAGEM_PADRAO = "🙏 No momento não estamos aceitando pedidos por aqui.";
+
+async function lerEstado() {
+  const { data, error } = await supabase.from("pausa").select("*").eq("id", 1).maybeSingle();
+  if (error || !data) {
+    if (error) console.log("⚠️ Erro ao ler pausa do Supabase:", error.message);
+    return { pausado: false, mensagem: MENSAGEM_PADRAO };
   }
+  return { pausado: data.pausado === true, mensagem: data.mensagem || MENSAGEM_PADRAO };
 }
 
-function salvarEstado(estado) {
-  fs.writeFileSync(caminhoArquivo, JSON.stringify(estado, null, 2), "utf-8");
+async function salvarEstado(estado) {
+  const { error } = await supabase
+    .from("pausa")
+    .upsert({ id: 1, pausado: estado.pausado, mensagem: estado.mensagem });
+  if (error) console.log("⚠️ Erro ao salvar pausa no Supabase:", error.message);
 }
 
-function estaPausado() {
-  return lerEstado().pausado === true;
+async function estaPausado() {
+  const estado = await lerEstado();
+  return estado.pausado === true;
 }
 
-function mensagemPausa() {
-  return lerEstado().mensagem;
+async function mensagemPausa() {
+  const estado = await lerEstado();
+  return estado.mensagem;
 }
 
-function pausar() {
-  const estado = lerEstado();
+async function pausar() {
+  const estado = await lerEstado();
   estado.pausado = true;
-  salvarEstado(estado);
+  await salvarEstado(estado);
 }
 
-function despausar() {
-  const estado = lerEstado();
+async function despausar() {
+  const estado = await lerEstado();
   estado.pausado = false;
-  salvarEstado(estado);
+  await salvarEstado(estado);
 }
 
 module.exports = { estaPausado, mensagemPausa, pausar, despausar };
