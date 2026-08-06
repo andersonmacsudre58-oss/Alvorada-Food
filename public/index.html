@@ -605,15 +605,16 @@
         <div class="cards">
           ${itens.map(p => {
             const esgotado = p.estoque <= 0;
+            const indisponivel = esgotado || !abertoAgora;
             return `
-            <div class="card${esgotado ? " card-esgotado" : ""}" data-id="${p.id}">
+            <div class="card${indisponivel ? " card-esgotado" : ""}" data-id="${p.id}">
               <div class="card-top">
                 <h3>${p.nome}</h3>
                 <span class="price-tag">${formatarReais(p.preco)}</span>
               </div>
               ${p.descricao ? `<p class="desc">${p.descricao}</p>` : ""}
-              ${esgotado
-                ? `<div class="card-actions"><span class="badge-esgotado">ESGOTADO</span></div>`
+              ${indisponivel
+                ? `<div class="card-actions"><span class="badge-esgotado">${esgotado ? "ESGOTADO" : "FECHADO"}</span></div>`
                 : `<div class="card-actions">
                     <div class="stepper" data-id="${p.id}">
                       <button type="button" class="dec">−</button>
@@ -638,6 +639,7 @@
     try {
       const resposta = await fetch("/api/horario");
       const dados = await resposta.json();
+      const mudouStatus = abertoAgora !== dados.abertoAgora;
       abertoAgora = dados.abertoAgora;
 
       const avisoFechado = document.getElementById("avisoFechado");
@@ -649,6 +651,13 @@
           : "😴 Estamos fechados no momento.";
       } else {
         avisoFechado.style.display = "none";
+      }
+
+      // Se o status mudou (abriu/fechou) enquanto a página estava aberta,
+      // re-renderiza o cardápio e o carrinho pra refletir na hora.
+      if (mudouStatus) {
+        if (catalogo.length) renderCardapio();
+        renderCarrinho();
       }
     } catch (erro) {
       console.warn("Não foi possível carregar o horário:", erro);
@@ -765,7 +774,7 @@
     const totalItens = itens.reduce((s, i) => s + i.qty, 0);
     cartCount.textContent = totalItens;
     cartTotalTab.textContent = formatarReais(subtotal);
-    cartTab.classList.toggle("hidden", totalItens === 0);
+    cartTab.classList.toggle("hidden", totalItens === 0 || !abertoAgora);
 
     // linhas do carrinho
     if (itens.length === 0) {
@@ -933,8 +942,15 @@
       form.style.display = "none";
       for (const id in carrinho) carrinho[id] = 0;
       renderCarrinho();
+    } else if (resultado.status === 423) {
+      // Loja fechada: não faz sentido abrir o WhatsApp pra enviar manualmente.
+      abertoAgora = false;
+      document.getElementById("avisoFechado").style.display = "block";
+      mostrarErro("Estamos fechados no momento — não é possível finalizar o pedido agora.");
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Finalizar pedido";
     } else {
-      // Backend não confirmou o envio: abre o WhatsApp com o pedido pronto,
+      // Falha técnica (não é sobre horário): abre o WhatsApp com o pedido pronto,
       // mas o cliente PRECISA apertar enviar por lá — avisamos isso na tela.
       console.warn("Envio automático não confirmado, motivo:", resultado.motivo);
       mostrarErro("Não conseguimos confirmar o envio automático. Uma aba do WhatsApp foi aberta com seu pedido pronto — é só apertar enviar por lá pra garantir.");
@@ -947,7 +963,7 @@
 
   async function enviarParaBackend(pedido) {
     if (!BACKEND_URL || BACKEND_URL.includes("SEU-SERVIDOR-AQUI")) {
-      return { ok: false, motivo: "BACKEND_URL não configurado" };
+      return { ok: false, status: null, motivo: "BACKEND_URL não configurado" };
     }
     try {
       const resposta = await fetch(BACKEND_URL, {
@@ -957,11 +973,11 @@
       });
       const dados = await resposta.json().catch(() => null);
       if (!resposta.ok) {
-        return { ok: false, motivo: `HTTP ${resposta.status} — ${dados?.erro || "sem detalhes"}` };
+        return { ok: false, status: resposta.status, motivo: `HTTP ${resposta.status} — ${dados?.erro || "sem detalhes"}` };
       }
-      return { ok: dados?.ok === true, motivo: dados?.erro || "resposta sem ok:true" };
+      return { ok: dados?.ok === true, status: resposta.status, motivo: dados?.erro || "resposta sem ok:true" };
     } catch (erro) {
-      return { ok: false, motivo: `Erro de rede: ${erro.message}` };
+      return { ok: false, status: null, motivo: `Erro de rede: ${erro.message}` };
     }
   }
 
