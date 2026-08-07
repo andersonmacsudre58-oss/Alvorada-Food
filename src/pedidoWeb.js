@@ -10,7 +10,7 @@ const { listarProdutos, conferirEstoque, baixarEstoque } = require("./produtos")
 const { estaAberto, obterHorariosParaApi } = require("./horario");
 const { obterConfigEntrega } = require("./entrega");
 const { criarRotasApiPainel, criarRotasEstaticasPainel } = require("../painel/server");
-const { marcarPedidoFinalizado } = require("./state"); // Importado para travar o estado do bot
+const { marcarPedidoFinalizado } = require("./state");
 
 const PORTA_PEDIDOS = process.env.PORTA_PEDIDOS || process.env.PORT || 3333;
 
@@ -71,7 +71,7 @@ function montarResumoPedido(pedido) {
   return msg;
 }
 
-function iniciarServidorPedidos(sock) {
+function iniciarServidorPedidos(obterSockAtivo) {
   const app = express();
   app.use(express.json());
 
@@ -107,7 +107,6 @@ function iniciarServidorPedidos(sock) {
       const jidCliente = dados.jidCliente || numeroParaJid(dados.numeroCliente);
       const resumo = montarResumoPedido(dados);
 
-      // 1. SALVA NO PAINEL E DÁ BAIXA NO ESTOQUE PRIMEIRO
       await salvarPedido({
         cliente: jidCliente,
         nome: dados.nome,
@@ -125,20 +124,18 @@ function iniciarServidorPedidos(sock) {
       });
 
       await baixarEstoque(dados.itens);
-
-      // 2. TRAVA O ESTADO DA SESSÃO DO BOT
       marcarPedidoFinalizado(jidCliente);
 
-      // Responde imediatamente com sucesso para o site liberar a tela
       res.json({ ok: true });
 
-      // 3. DISPARA O WHATSAPP DIRETAMENTE (Sem travar pela flag global 'conectado')
-      if (sock) {
-        sock.sendMessage(jidCliente, { text: resumo }).catch(err => {
+      // Dispara o WhatsApp buscando o socket ativo no exato momento do pedido
+      const sockAtual = typeof obterSockAtivo === "function" ? obterSockAtivo() : null;
+      if (sockAtual) {
+        sockAtual.sendMessage(jidCliente, { text: resumo }).catch(err => {
           console.error("Erro ao enviar mensagem no WhatsApp:", err);
         });
       } else {
-        console.warn("Socket do WhatsApp não inicializado no momento do pedido.");
+        console.warn("⚠️ Socket do WhatsApp não encontrado no momento do disparo do pedido.");
       }
 
     } catch (erro) {
@@ -217,9 +214,6 @@ function iniciarServidorPedidos(sock) {
 
   app.listen(PORTA_PEDIDOS, () => {
     console.log(`📦 Servidor rodando na porta ${PORTA_PEDIDOS}`);
-    console.log(`   Site: http://localhost:${PORTA_PEDIDOS}/`);
-    console.log(`   Painel: http://localhost:${PORTA_PEDIDOS}/painel`);
-    console.log(`   QR Code: http://localhost:${PORTA_PEDIDOS}/qr`);
   });
 }
 

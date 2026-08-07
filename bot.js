@@ -93,7 +93,7 @@ async function iniciarBot() {
   sockAtual = sock;
 
   if (!servidorPedidosIniciado) {
-    iniciarServidorPedidos(sock);
+    iniciarServidorPedidos(() => sockAtual);
     servidorPedidosIniciado = true;
   }
 
