@@ -66,7 +66,7 @@ function montarResumoPedido(pedido) {
     msg += ` (troco para ${pedido.trocoPara})`;
   }
   
-  // Mensagem solicitada para avisar o cliente
+  // Mensagem clara de pedido realizado e aguardando preparo
   msg += `\n\n📌 *Pedido já realizado, agora é somente aguardar para o preparo!* 🚀`;
 
   return msg;
@@ -127,10 +127,10 @@ function iniciarServidorPedidos(sock) {
 
       await baixarEstoque(dados.itens);
 
-      // 2. MARCA A SESSÃO DO BOT COMO FINALIZADA (Evita o loop de boas-vindas)
+      // 2. TRAVA O ESTADO DA SESSÃO DO BOT (Evita o loop de boas-vindas)
       marcarPedidoFinalizado(jidCliente);
 
-      // Responde imediatamente com sucesso para o site do cliente
+      // Responde imediatamente com sucesso para o site liberar a tela de conclusão/caixa flutuante
       res.json({ ok: true });
 
       // 3. DISPARA O WHATSAPP DE FORMA ASSÍNCRONA
