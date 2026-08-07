@@ -1,6 +1,19 @@
 require("dotenv").config();
 
 const fs = require("fs");
+const path = require("path");
+
+// Limpa a pasta de sessão antiga corrompida automaticamente ao reiniciar para evitar erros de criptografia (Bad MAC)
+const pastaAuth = "auth_info_baileys";
+if (fs.existsSync(pastaAuth)) {
+  try {
+    fs.rmSync(pastaAuth, { recursive: true, force: true });
+    console.log("🧹 Pasta de sessão antiga limpa com sucesso!");
+  } catch (e) {
+    console.log("Erro ao limpar pasta de sessão:", e.message);
+  }
+}
+
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -26,7 +39,6 @@ let sockAtual = null;
 // ----------------------------------------------------------
 //  MENSAGENS
 // ----------------------------------------------------------
-// Link do site de pedidos (troque quando publicar, ex: "https://alvoradafood.onrender.com")
 const SITE_URL = "https://alvorada-food.onrender.com";
 
 function textoBoasVindas(numero) {
@@ -40,9 +52,8 @@ function textoBoasVindas(numero) {
 }
 
 /**
- * Ponto de entrada de cada mensagem recebida. Não existe mais fluxo de
- * pedido por aqui — só trata comandos de administrador (pausar/despausar
- * o bot) e devolve a mensagem de boas-vindas com o link do site.
+ * Ponto de entrada de cada mensagem recebida. Trata comandos de administrador 
+ * e devolve a mensagem de boas-vindas com o link do site.
  */
 async function processarMensagem(numero, textoOriginal) {
   const texto = textoOriginal.trim().toLowerCase();
@@ -76,7 +87,7 @@ async function iniciarBot() {
   const sock = makeWASocket({
     auth: state,
     version,
-    logger: pino({ level: "silent" }), // troque para "info" se quiser ver os logs internos
+    logger: pino({ level: "silent" }),
     printQRInTerminal: false,
   });
   sockAtual = sock;
@@ -99,7 +110,7 @@ async function iniciarBot() {
     }
 
     if (connection === "close") {
-      marcarDesconectado(); // impede o site de tentar mandar mensagem com a conexão caída
+      marcarDesconectado();
 
       const erro = lastDisconnect?.error;
       const codigoErro = new Boom(erro)?.output?.statusCode;
@@ -110,8 +121,6 @@ async function iniciarBot() {
       if (deveReconectar) {
         iniciarBot();
       } else {
-        // Logout (ex: você desconectou pelo celular): as credenciais antigas
-        // não servem mais. Apaga sozinho e reinicia pra gerar um QR novo em /qr.
         console.log("Sessão desconectada (logout). Apagando credenciais antigas e gerando um novo QR Code...");
         try {
           fs.rmSync("auth_info_baileys", { recursive: true, force: true });
@@ -130,9 +139,9 @@ async function iniciarBot() {
     if (type !== "notify") return;
 
     for (const msg of messages) {
-      if (!msg.message) continue; // ignora mensagens sem texto (ex: reações, status internos)
-      if (msg.key.remoteJid === "status@broadcast") continue; // ignora status/stories
-      if (msg.key.remoteJid.endsWith("@g.us")) continue; // ignora mensagens de grupos
+      if (!msg.message) continue;
+      if (msg.key.remoteJid === "status@broadcast") continue;
+      if (msg.key.remoteJid.endsWith("@g.us")) continue;
 
       const numero = msg.key.remoteJid;
       const textoRecebido =
@@ -140,10 +149,8 @@ async function iniciarBot() {
         msg.message.extendedTextMessage?.text ||
         "";
 
-      if (!textoRecebido) continue; // ignora áudios, figurinhas, imagens sem legenda, etc.
+      if (!textoRecebido) continue;
 
-      // Mensagem enviada por você mesmo, digitando direto na conversa do cliente
-      // (mesmo WhatsApp conectado ao bot). Usada para pausar/despausar só aquele cliente.
       if (msg.key.fromMe) {
         const textoNormalizado = textoRecebido.trim().toLowerCase();
         if (textoNormalizado === "oi") {
@@ -151,10 +158,9 @@ async function iniciarBot() {
         } else if (textoNormalizado === "obrigado") {
           await despausarIndividual(numero);
         }
-        continue; // nunca processa o fluxo do bot para mensagens enviadas por nós mesmos
+        continue;
       }
 
-      // Cliente pausado individualmente: bot não responde até você mandar "obrigado" na conversa dele.
       if (await estaPausadoIndividualmente(numero)) continue;
 
       const resposta = await processarMensagem(numero, textoRecebido);
