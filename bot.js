@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const fs = require("fs");
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -17,7 +18,7 @@ const {
   pausarIndividual,
   despausarIndividual,
 } = require("./src/pausaIndividual");
-const { iniciarServidorPedidos, atualizarQR, marcarConectado } = require("./src/pedidoWeb");
+const { iniciarServidorPedidos, atualizarQR, marcarConectado, marcarDesconectado } = require("./src/pedidoWeb");
 
 let servidorPedidosIniciado = false;
 let sockAtual = null;
@@ -98,15 +99,26 @@ async function iniciarBot() {
     }
 
     if (connection === "close") {
+      marcarDesconectado(); // impede o site de tentar mandar mensagem com a conexão caída
+
       const erro = lastDisconnect?.error;
       const codigoErro = new Boom(erro)?.output?.statusCode;
       const deveReconectar = codigoErro !== DisconnectReason.loggedOut;
       console.log("Conexão encerrada. Código:", codigoErro, "| Motivo:", erro?.message || erro);
       console.log("Reconectando?", deveReconectar);
+
       if (deveReconectar) {
         iniciarBot();
       } else {
-        console.log("Sessão desconectada (logout). Apague a pasta 'auth_info_baileys' e escaneie o QR novamente.");
+        // Logout (ex: você desconectou pelo celular): as credenciais antigas
+        // não servem mais. Apaga sozinho e reinicia pra gerar um QR novo em /qr.
+        console.log("Sessão desconectada (logout). Apagando credenciais antigas e gerando um novo QR Code...");
+        try {
+          fs.rmSync("auth_info_baileys", { recursive: true, force: true });
+        } catch (erroLimpeza) {
+          console.log("Erro ao apagar credenciais antigas:", erroLimpeza.message);
+        }
+        iniciarBot();
       }
     } else if (connection === "open") {
       console.log("✅ Bot conectado! Recebendo mensagens e enviando o link do site.");

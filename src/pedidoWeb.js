@@ -38,6 +38,10 @@ function marcarConectado() {
   ultimoQR = null;
 }
 
+function marcarDesconectado() {
+  conectado = false;
+}
+
 function formatarReais(valor) {
   return Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -248,4 +252,4 @@ function iniciarServidorPedidos(sock) {
   });
 }
 
-module.exports = { iniciarServidorPedidos, atualizarQR, marcarConectado };
+module.exports = { iniciarServidorPedidos, atualizarQR, marcarConectado, marcarDesconectado };
