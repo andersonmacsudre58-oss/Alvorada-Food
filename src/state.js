@@ -3,8 +3,6 @@ const path = require("path");
 
 // ==========================================================
 //  ESTADO DA CONVERSA (sessão de cada cliente)
-//  Guarda em que etapa cada cliente está, o carrinho dele, etc.
-//  Persiste em sessoes-em-andamento.json pra sobreviver a reinícios.
 // ==========================================================
 
 const ETAPAS = {
@@ -21,6 +19,8 @@ const ETAPAS = {
   AGUARDANDO_PAGAMENTO: "AGUARDANDO_PAGAMENTO",
   AGUARDANDO_TROCO: "AGUARDANDO_TROCO",
   AGUARDANDO_CONFIRMACAO: "AGUARDANDO_CONFIRMACAO",
+  // Adicionado para bloquear o loop de boas-vindas após o pedido no site
+  PEDIDO_FINALIZADO: "PEDIDO_FINALIZADO",
 };
 
 const arquivoSessoes = path.join(__dirname, "..", "sessoes-em-andamento.json");
@@ -40,6 +40,7 @@ function sessaoPadrao() {
     formaPagamento: null,
     trocoPara: null,
     trocoPendente: null,
+    pedidoFinalizado: false, // Controle extra para o site
     ultimaInteracao: Date.now(),
   };
 }
@@ -53,6 +54,17 @@ function obterSessao(numero) {
 
 function resetarSessao(numero) {
   sessoes.set(numero, sessaoPadrao());
+  salvarSessoes();
+}
+
+// Função para marcar que o cliente já concluiu o pedido pelo site
+function marcarPedidoFinalizado(numero) {
+  const sessao = obterSessao(numero);
+  sessao.etapa = ETAPAS.PEDIDO_FINALIZADO;
+  sessao.pedidoFinalizado = true;
+  sessao.ultimaInteracao = Date.now();
+  sessoes.set(numero, sessao);
+  salvarSessoes();
 }
 
 function salvarSessoes() {
@@ -78,8 +90,6 @@ function carregarSessoes() {
   }
 }
 
-// Lista os números com pedido em andamento (etapa diferente do menu inicial,
-// ou carrinho com itens) que estão parados há mais tempo que o timeout.
 function listarSessoesInativas(timeoutMs) {
   const agora = Date.now();
   const inativos = [];
@@ -101,4 +111,5 @@ module.exports = {
   salvarSessoes,
   carregarSessoes,
   listarSessoesInativas,
+  marcarPedidoFinalizado, // Exportando para usar no pedidoWeb.js ou no bot
 };

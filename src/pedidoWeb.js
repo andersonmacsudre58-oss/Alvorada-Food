@@ -1,15 +1,5 @@
 // ==========================================================
 //  SERVIDOR DE PEDIDOS DO SITE
-//  Recebe o pedido finalizado no site (via HTTP) e manda a
-//  mensagem automaticamente pelo WhatsApp, usando a mesma
-//  conexão do bot (Baileys) — sem o cliente precisar apertar
-//  "enviar" em lugar nenhum.
-//
-//  IMPORTANTE: pra isso funcionar, este servidor precisa estar
-//  acessível pela internet (HTTPS), rodando junto com o bot.js
-//  em algum servidor (VPS, Railway, Render etc). Rodando só no
-//  seu computador de casa, o site não vai conseguir chamar essa
-//  API.
 // ==========================================================
 
 const express = require("express");
@@ -20,11 +10,10 @@ const { listarProdutos, conferirEstoque, baixarEstoque } = require("./produtos")
 const { estaAberto, obterHorariosParaApi } = require("./horario");
 const { obterConfigEntrega } = require("./entrega");
 const { criarRotasApiPainel, criarRotasEstaticasPainel } = require("../painel/server");
+const { marcarPedidoFinalizado } = require("./state"); // Importado para travar o estado do bot
 
-// Porta em que essa API vai escutar.
 const PORTA_PEDIDOS = process.env.PORTA_PEDIDOS || process.env.PORT || 3333;
 
-// Estado da conexão com o WhatsApp, usado pela página /qr.
 let ultimoQR = null;
 let conectado = false;
 
@@ -46,16 +35,11 @@ function formatarReais(valor) {
   return Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// Transforma o número digitado pelo cliente (ex: "98 98227-3236")
-// no formato de jid que o Baileys usa para mandar mensagem (ex: "5598982273236@s.whatsapp.net").
 function numeroParaJid(numeroDigitado) {
   let digitos = String(numeroDigitado).replace(/\D/g, "");
-
-  // Se a pessoa não digitou o código do país, assume Brasil (55).
   if (digitos.length <= 11) {
     digitos = "55" + digitos;
   }
-
   return `${digitos}@s.whatsapp.net`;
 }
 
@@ -81,20 +65,17 @@ function montarResumoPedido(pedido) {
   if (pedido.formaPagamento === "dinheiro" && pedido.trocoPara) {
     msg += ` (troco para ${pedido.trocoPara})`;
   }
-  msg += `\n\n✅ *Pedido confirmado com sucesso!* Já estamos preparando — chega o mais rápido possível. 🙌`;
+  
+  // Mensagem solicitada para avisar o cliente
+  msg += `\n\n📌 *Pedido já realizado, agora é somente aguardar para o preparo!* 🚀`;
 
   return msg;
 }
 
-/**
- * Sobe o servidor da API de pedidos do site.
- * @param {object} sock - a conexão ativa do Baileys (a mesma usada pelo bot).
- */
 function iniciarServidorPedidos(sock) {
   const app = express();
   app.use(express.json());
 
-  // Libera acesso de qualquer site (o site fica hospedado em outro domínio).
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -112,10 +93,6 @@ function iniciarServidorPedidos(sock) {
         return res.status(400).json({ ok: false, erro: "Dados do pedido incompletos." });
       }
 
-      if (!conectado) {
-        return res.status(503).json({ ok: false, erro: "O WhatsApp ainda não está conectado. Tente novamente em instantes." });
-      }
-
       if (!(await estaAberto())) {
         return res.status(423).json({ ok: false, erro: "Estamos fechados no momento. Confira nosso horário de funcionamento." });
       }
@@ -128,17 +105,10 @@ function iniciarServidorPedidos(sock) {
         return res.status(409).json({ ok: false, erro: `Sem estoque suficiente: ${detalhes}` });
       }
 
-      // Se o cliente veio pelo link do WhatsApp, já temos o jid exato dele
-      // (funciona até pra números com @lid, que não têm telefone real exposto).
-      // Senão, monta o jid a partir do número digitado manualmente.
       const jidCliente = dados.jidCliente || numeroParaJid(dados.numeroCliente);
       const resumo = montarResumoPedido(dados);
 
-      // Manda a mensagem pro cliente automaticamente — como é o mesmo número
-      // conectado ao bot, essa mensagem também aparece na sua própria conversa
-      // com esse cliente no WhatsApp.
-      await sock.sendMessage(jidCliente, { text: resumo });
-
+      // 1. SALVA NO PAINEL E DÁ BAIXA NO ESTOQUE PRIMEIRO
       await salvarPedido({
         cliente: jidCliente,
         nome: dados.nome,
@@ -157,18 +127,30 @@ function iniciarServidorPedidos(sock) {
 
       await baixarEstoque(dados.itens);
 
+      // 2. MARCA A SESSÃO DO BOT COMO FINALIZADA (Evita o loop de boas-vindas)
+      marcarPedidoFinalizado(jidCliente);
+
+      // Responde imediatamente com sucesso para o site do cliente
       res.json({ ok: true });
+
+      // 3. DISPARA O WHATSAPP DE FORMA ASSÍNCRONA
+      if (conectado) {
+        sock.sendMessage(jidCliente, { text: resumo }).catch(err => {
+          console.error("Erro ao enviar mensagem no WhatsApp (pedido salvo com sucesso):", err);
+        });
+      } else {
+        console.warn("Pedido salvo com sucesso, mas o WhatsApp estava desconectado no momento do envio da mensagem.");
+      }
+
     } catch (erro) {
       console.error("Erro ao processar pedido do site:", erro);
       res.status(500).json({
         ok: false,
-        erro: `Não foi possível enviar o pedido pelo WhatsApp (${erro.message || "erro desconhecido"}).`,
+        erro: `Não foi possível processar o pedido (${erro.message || "erro desconhecido"}).`,
       });
     }
   });
 
-  // Página pra escanear o QR Code pelo navegador (útil quando o bot roda
-  // num servidor remoto, tipo Render, onde não dá pra ver o terminal fácil).
   app.get("/qr", async (req, res) => {
     res.set("Content-Type", "text/html; charset=utf-8");
 
@@ -203,7 +185,6 @@ function iniciarServidorPedidos(sock) {
     `);
   });
 
-  // Cardápio + estoque em tempo real, pro site montar a tela.
   app.get("/api/produtos", async (req, res) => {
     try {
       res.json(await listarProdutos());
@@ -213,7 +194,6 @@ function iniciarServidorPedidos(sock) {
     }
   });
 
-  // Bairros de entrega + taxas, pro site montar o checkout.
   app.get("/api/entrega", async (req, res) => {
     try {
       res.json(await obterConfigEntrega());
@@ -223,7 +203,6 @@ function iniciarServidorPedidos(sock) {
     }
   });
 
-  // Horário de funcionamento + se está aberto agora, pro site mostrar/bloquear pedido.
   app.get("/api/horario", async (req, res) => {
     try {
       res.json(await obterHorariosParaApi());
@@ -233,15 +212,8 @@ function iniciarServidorPedidos(sock) {
     }
   });
 
-  // API do painel (cozinha + vendas) fica na raiz, porque é assim que
-  // o painel/app.js chama: fetch("/api/pedidos/ativos") etc.
   app.use("/api", criarRotasApiPainel());
-
-  // Tela do painel (HTML/CSS/JS) fica em /painel
   app.use("/painel", criarRotasEstaticasPainel());
-
-  // Serve o site (index.html e afins) direto pela mesma URL do bot,
-  // já que ele está numa pasta "public" dentro do projeto.
   app.use(express.static(path.join(__dirname, "..", "public")));
 
   app.listen(PORTA_PEDIDOS, () => {
