@@ -66,7 +66,6 @@ function montarResumoPedido(pedido) {
     msg += ` (troco para ${pedido.trocoPara})`;
   }
   
-  // Mensagem clara de pedido realizado e aguardando preparo
   msg += `\n\n📌 *Pedido já realizado, agora é somente aguardar para o preparo!* 🚀`;
 
   return msg;
@@ -127,19 +126,19 @@ function iniciarServidorPedidos(sock) {
 
       await baixarEstoque(dados.itens);
 
-      // 2. TRAVA O ESTADO DA SESSÃO DO BOT (Evita o loop de boas-vindas)
+      // 2. TRAVA O ESTADO DA SESSÃO DO BOT
       marcarPedidoFinalizado(jidCliente);
 
-      // Responde imediatamente com sucesso para o site liberar a tela de conclusão/caixa flutuante
+      // Responde imediatamente com sucesso para o site liberar a tela
       res.json({ ok: true });
 
-      // 3. DISPARA O WHATSAPP DE FORMA ASSÍNCRONA
-      if (conectado) {
+      // 3. DISPARA O WHATSAPP DIRETAMENTE (Sem travar pela flag global 'conectado')
+      if (sock) {
         sock.sendMessage(jidCliente, { text: resumo }).catch(err => {
-          console.error("Erro ao enviar mensagem no WhatsApp (pedido salvo com sucesso):", err);
+          console.error("Erro ao enviar mensagem no WhatsApp:", err);
         });
       } else {
-        console.warn("Pedido salvo com sucesso, mas o WhatsApp estava desconectado no momento do envio da mensagem.");
+        console.warn("Socket do WhatsApp não inicializado no momento do pedido.");
       }
 
     } catch (erro) {
